@@ -1,0 +1,12 @@
+node_modules/
+.env
+*.log
+
+# 取得データと生成物（再生成可能なのでコミットしない）
+data/raw/
+data/index/
+data/language_models/
+traces/
+
+# 評価の中間生成物。レビュー後の golden-set.json 本体はコミットする
+evals/golden-set.draft.json

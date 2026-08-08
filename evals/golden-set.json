@@ -1,0 +1,488 @@
+[
+  {
+    "question": "Slurmのsbatch用train.sh設定例では、使用ノードを明示的に指定する#SBATCHオプションは何で、どのノードを指定していますか？",
+    "expected_answer": "`#SBATCH --nodelist=osk-gpu[01,03]`で、osk-gpu01とosk-gpu03を指定しています。",
+    "golden_chunk_ids": [
+      "09794dc380328ae5cfb7#7"
+    ],
+    "article_id": "09794dc380328ae5cfb7",
+    "note": "slurmの基本コマンドについて > 4. 基本コマンド > バッチジョブの投入(sbatch)",
+    "difficulty": "easy"
+  },
+  {
+    "question": "「SchedulerいらずのOptimizer」の実験条件で使用されたデータ拡張手法をすべて挙げてください。",
+    "expected_answer": "ランダム左右反転、RandAugment、Cutout。",
+    "golden_chunk_ids": [
+      "0ba5aa1f2909f35fbfed#3"
+    ],
+    "article_id": "0ba5aa1f2909f35fbfed",
+    "note": "[深層学習] SchedulerいらずのOptimizer > 3. 実験条件",
+    "difficulty": "easy"
+  },
+  {
+    "question": "サントリー天然水の森の日本地図に掲載されたプロジェクトのうち、天王山プロジェクトの面積は約何haですか？",
+    "expected_answer": "約1,056haです。",
+    "golden_chunk_ids": [
+      "0cd09952471aa1e7c924#14"
+    ],
+    "article_id": "0cd09952471aa1e7c924",
+    "note": "signate ragコンペに参加してみた > 3. アプローチ > 3.3 PDFの文書化 > PDFの文書化の戦略",
+    "difficulty": "easy"
+  },
+  {
+    "question": "Amazon BedrockのConverse APIにDynamoDB形式の会話履歴を渡す際、各メッセージをどのような`role`と`content`の構造へ変換していますか？",
+    "expected_answer": "各メッセージの`role`（`user`または`assistant`）をそのまま設定し、本文を`content`配列内の`{\"text\": msg[\"content\"]}`として格納します。",
+    "golden_chunk_ids": [
+      "13f35f1040538160d43a#21"
+    ],
+    "article_id": "13f35f1040538160d43a",
+    "note": "Amazon Bedrock × Next.jsでAIチャットアプリを作ってみた【サーバーレス構成】 > 4. Bedrock × Lambdaでチャット機能を実装 > Bedrockへのメッセージ送信",
+    "difficulty": "easy"
+  },
+  {
+    "question": "vLLMを用いたHLE高速推論でトークン長を調査するPythonコードに定義された`SYSTEM_EXACT_ANSWER`では、最終回答をどの3項目の形式で出力するよう指定していますか？",
+    "expected_answer": "Explanation（最終回答の説明）、Exact Answer（簡潔な最終回答）、Confidence（回答の確信度を0〜100%で示す値）の3項目です。",
+    "golden_chunk_ids": [
+      "159e9cd6d5d5e4dfc2a7#8"
+    ],
+    "article_id": "159e9cd6d5d5e4dfc2a7",
+    "note": "vLLMの高速推論を実施した話【HLE】 > 6. 各パラメータの詳細と何故高速化に寄与したか > 6.1 max-model-len",
+    "difficulty": "easy"
+  },
+  {
+    "question": "Vite + DockerでReact開発環境を構築する際、ホストマシンからアクセスできるようにし、開発サーバーを3000番ポートで起動するため、package.jsonのdevスクリプトにはどのViteオプションを指定しますか？",
+    "expected_answer": "`vite --host 0.0.0.0 --port 3000`を指定します。",
+    "golden_chunk_ids": [
+      "26efe86b3c2d506850e9#6"
+    ],
+    "article_id": "26efe86b3c2d506850e9",
+    "note": "Vite + DockerでReact環境を構築する > 4. 環境構築の手順 > 4.3 Dockerfile, package.jsonを編集する",
+    "difficulty": "easy"
+  },
+  {
+    "question": "「ローカルでRAG用のサーバーを構築してみた[vLLM, infinity使用]」で紹介された、テキスト生成AIへの複数リクエストを一つに集約する方法には、どのようなコスト面の限界と品質劣化のリスクがありますか？",
+    "expected_answer": "1件あたりのトークン数が増えるため平均費用が高くなり、コスト削減効果が乏しくなる場合がある。また、処理難易度が上がって品質劣化を招く危険性がある。",
+    "golden_chunk_ids": [
+      "37222e6647bcf1c214bb#11"
+    ],
+    "article_id": "37222e6647bcf1c214bb",
+    "note": "ローカルでRAG用のサーバーを構築してみた[vLLM, infinity使用] > 7. ragの結果",
+    "difficulty": "easy"
+  },
+  {
+    "question": "Qwen3.5-27BをバックエンドにしたClaude Code連携の動作確認では、どの2種類のツール呼び出しを試し、結果はどう評価されましたか？",
+    "expected_answer": "ファイルの読み書きとWeb検索を試し、いずれも正常に実施できたため、ツール呼び出しは問題ないと評価されました。",
+    "golden_chunk_ids": [
+      "49d978509bc45957a6c3#14"
+    ],
+    "article_id": "49d978509bc45957a6c3",
+    "note": "[Claude Code連携あり]Qwen3.5-27B動かしてみた > 6. 使用例 > 6.2 Claude Codeの連携方法をURL経由でREADMEに追加してもらう",
+    "difficulty": "easy"
+  },
+  {
+    "question": "GPU環境でvLLMサーバーのチャット補完APIをcurlで呼び出した際、レスポンスJSONの`model`フィールドには何と表示されますか？",
+    "expected_answer": "`/models/Qwen3-8B-FP8` と表示されます。",
+    "golden_chunk_ids": [
+      "605a7e8fa311115506ea#13"
+    ],
+    "article_id": "605a7e8fa311115506ea",
+    "note": "GPU環境でvLLMを使ってローカルLLMサーバーを動かしてみた > 5. 動作確認 > curlを使用してvLLMサーバーのAPIを呼び出す",
+    "difficulty": "easy"
+  },
+  {
+    "question": "LLaVA論文では、LLMの学習において画像を使用したどのチューニングを実施していますか？",
+    "expected_answer": "画像を使用した指示チューニングを実施しています。",
+    "golden_chunk_ids": [
+      "7ae8f81007d15be3b28c#2"
+    ],
+    "article_id": "7ae8f81007d15be3b28c",
+    "note": "【Vision Language Model】LLaVAの論文を読んでみた > 1. はじめに > 1.3 LLMの学習方法と本論文における立ち位置",
+    "difficulty": "easy"
+  },
+  {
+    "question": "vLLMでRayを分散実行バックエンドに指定してマルチノード推論を行う場合、`vllm serve` のテンソル並列数、パイプライン並列数、最大モデル長、GPUメモリ使用率、およびRoPEスケーリングの設定値はそれぞれ何ですか？",
+    "expected_answer": "テンソル並列数は8、パイプライン並列数は2、最大モデル長は32768、GPUメモリ使用率は0.95です。RoPEスケーリングは`rope_type`を`yarn`、`factor`を4.0、`original_max_position_embeddings`を32768に設定します。",
+    "golden_chunk_ids": [
+      "807e499107ae27bacbba#9"
+    ],
+    "article_id": "807e499107ae27bacbba",
+    "note": "vLLMでマルチノードを推論した話【ray使用】 > 5. マルチノードでの推論の実行 > ヘッドノードでのvLLMの起動",
+    "difficulty": "easy"
+  },
+  {
+    "question": "houtini/lmを使ってClaude CodeからローカルLLMへ14,000トークンのファイル要約を委譲した場合、委譲なしと委譲ありでClaude側の消費トークンはそれぞれいくつになりますか。また、コンテキストウィンドウの汚染を防げる理由は何ですか？",
+    "expected_answer": "委譲なしでは14,000トークン、委譲ありでは依頼250トークンとサマリー500トークンを合わせた750トークンです。ローカルLLMがファイルを直接読み、その内容自体をClaudeのコンテキストに入れず、要約だけを返すためです。",
+    "golden_chunk_ids": [
+      "8323c374b39274beddfa#9"
+    ],
+    "article_id": "8323c374b39274beddfa",
+    "note": "houtini/lm で Claude Code からローカルLLMに委譲してみた ―― コード生成より「要約・分析」が効く > 7. 向いているタスク・向いていないタスク > 7.2 要約・分析系が本来の使いどころ",
+    "difficulty": "easy"
+  },
+  {
+    "question": "AWS CLI の `aws login` で取得した認証情報を使って boto3 から Amazon Bedrock API を呼び出す際、`MissingDependencyException` を避けるために必要な追加パッケージは何ですか？",
+    "expected_answer": "`botocore[crt]` をインストールする必要があります。",
+    "golden_chunk_ids": [
+      "8c276cbe645dfc7a68c0#7"
+    ],
+    "article_id": "8c276cbe645dfc7a68c0",
+    "note": "AWS Loginでローカル認証してBedrock APIを呼び出してみた > Bedrockを呼び出すPythonコードの実装 > 重要: `botocore[crt]`の必要性",
+    "difficulty": "easy"
+  },
+  {
+    "question": "docker-composeでvLLMのQwen3-Embedding-0.6Bを埋め込みモデルとして起動する設定では、指定するタスク、データ型、GPUメモリ使用率、待受ポートはそれぞれ何ですか？",
+    "expected_answer": "タスクはembed、データ型はfloat16、GPUメモリ使用率は0.2、待受ポートは8002です。",
+    "golden_chunk_ids": [
+      "90ff1c799adaf72766e7#7"
+    ],
+    "article_id": "90ff1c799adaf72766e7",
+    "note": "vLLMでチャットモデルと埋め込みモデルをホストしてみた[Docker, docker-compose使用] > 3. vLLMサーバーの構築 > 構築手順",
+    "difficulty": "easy"
+  },
+  {
+    "question": "M3-Embeddingを実行したときに出力される `colbert_vecs` の配列の形状とデータ型は何ですか？",
+    "expected_answer": "形状は `(10, 1024)`、データ型は `float32` です。",
+    "golden_chunk_ids": [
+      "9ee2dca105740666e4d1#39"
+    ],
+    "article_id": "9ee2dca105740666e4d1",
+    "note": "M3-Embeddingを読んでみた > 8. 実際に動かしてみる",
+    "difficulty": "easy"
+  },
+  {
+    "question": "vLLM × Qwen3 × cline のローカルLLM環境構築で、Qwen3-14B-bnb-4bitモデルをHugging Faceからどのローカルディレクトリへダウンロードしていますか？",
+    "expected_answer": "unsloth/Qwen3-14B-bnb-4bitを、/models/Qwen3-14B-bnb-4bitへダウンロードしています。",
+    "golden_chunk_ids": [
+      "9f092b98e840b819ee52#4"
+    ],
+    "article_id": "9f092b98e840b819ee52",
+    "note": "vLLM × Qwen3 × cline：cline生成コードでCIFAR-10学習もできるローカルLLM環境の構築例 > 3. vLLMサーバーの構築 > 構築手順",
+    "difficulty": "easy"
+  },
+  {
+    "question": "FaithJudgeの実験で、Table 2・3をFaithBench専用として評価した理由は何ですか？",
+    "expected_answer": "FaithBenchには1記事あたり10モデル分の要約があり、それぞれに人手アノテーション（誤りスパンとラベル）が付いているため、9件をfew-shot実例、残り1件を判定対象とするleave-one-out評価を実施できるからです。",
+    "golden_chunk_ids": [
+      "a3f1904eb7d8adaaf8d1#34"
+    ],
+    "article_id": "a3f1904eb7d8adaaf8d1",
+    "note": "ハルシネーション判定を few-shot で強くする — 人手アノテーション付き実例をjudgeに渡すFaithJudgeを読んでみた > ハルシネーション判定を few-shot で強くする — 人手アノテーション付き実例をjudgeに渡すFaithJudgeを読んでみた > 6. 実験設計を読み解く > 6.2 Table 2・3 が FaithBench 専用な理由",
+    "difficulty": "easy"
+  },
+  {
+    "question": "LLaVA-MedのVQA-RAD学習実験では、RTX 4090で4bit量子化とLoRAを使ったファインチューニングに何時間かかり、論文のA100×8環境では同じ3 epochの学習を何時間で完了したとされていますか？",
+    "expected_answer": "RTX 4090では4〜5時間、論文のA100×8環境では0.6時間で完了した。",
+    "golden_chunk_ids": [
+      "ac094cf15928483b16c1#22"
+    ],
+    "article_id": "ac094cf15928483b16c1",
+    "note": "LLaVA-Med 読んでみた【VQA-RAD学習あり】 > 6. 感想",
+    "difficulty": "easy"
+  },
+  {
+    "question": "HLEの推論コードでは、モデルにどのような形式で回答を出力するよう指示していますか？",
+    "expected_answer": "回答理由（Explanation）、選択した回答（Answer）、および0〜100%の信頼度スコア（Confidence）を出力する形式です。",
+    "golden_chunk_ids": [
+      "aea213ef9c8358763792#13"
+    ],
+    "article_id": "aea213ef9c8358763792",
+    "note": "HLEとはなにか > 5. 評価方法 > 評価および推論コードについて",
+    "difficulty": "easy"
+  },
+  {
+    "question": "Amazon S3 VectorsとAmazon Bedrockを使ったマルチモーダル画像検索の分類タスクでは、どの5クラスを対象にし、それぞれどのクラス同士を見た目が似たクラスとして扱っていますか？",
+    "expected_answer": "対象クラスは ramen、pho、pad_thai、miso_soup、hot_and_sour_soup。類似クラスの組み合わせは ramen–pho、pho–ramen、pad_thai–ramen、miso_soup–hot_and_sour_soup、hot_and_sour_soup–miso_soup です。",
+    "golden_chunk_ids": [
+      "f2d05220a7f325d22b26#2"
+    ],
+    "article_id": "f2d05220a7f325d22b26",
+    "note": "Amazon S3 VectorsとBedrockでマルチモーダル画像検索してみた > 2. データセットとタスクについて > タスク",
+    "difficulty": "easy"
+  },
+  {
+    "question": "Slurmで実行する一般的な`train.sh`のバッチジョブと、Rayを使ったvLLMマルチノード推論の`start_ray_cluster.sh`では、メモリ割り当てと標準出力・エラー出力の保存先がそれぞれどのように設定されていますか？",
+    "expected_answer": "`train.sh`ではメモリを256GBに指定し、標準出力を`./info.out`、エラー出力を`./error.err`に保存します。一方、vLLMの`start_ray_cluster.sh`ではメモリを`0`（制限なし）にし、標準出力を`./ray-minimal-%j.out`、エラー出力を`./ray-minimal-%j.err`に保存します。",
+    "golden_chunk_ids": [
+      "09794dc380328ae5cfb7#7",
+      "807e499107ae27bacbba#3"
+    ],
+    "article_id": "09794dc380328ae5cfb7",
+    "difficulty": "multihop",
+    "note": "slurmの基本コマンドについて > 4. 基本コマンド > バッチジョブの投入(sbatch) ＋ vLLMでマルチノードを推論した話【ray使用】 > 4. rayによるノード起動と何をしているか > 起動コード"
+  },
+  {
+    "question": "「SchedulerいらずのOptimizer」の深層学習実験で使われたデータ拡張は何で、vLLM・Qwen3・clineによるCIFAR-10学習環境ではその後どのような改修や学習機能の追加を依頼したか？",
+    "expected_answer": "前者ではランダム左右反転、RandAugment、Cutoutを使用した。後者ではデータ拡張の導入、モデルの改修、学習率スケジューラーの導入を依頼した。",
+    "golden_chunk_ids": [
+      "0ba5aa1f2909f35fbfed#3",
+      "9f092b98e840b819ee52#12"
+    ],
+    "article_id": "0ba5aa1f2909f35fbfed",
+    "difficulty": "multihop",
+    "note": "[深層学習] SchedulerいらずのOptimizer > 3. 実験条件 ＋ vLLM × Qwen3 × cline：cline生成コードでCIFAR-10学習もできるローカルLLM環境の構築例 > 8. 生成したコード(補足)"
+  },
+  {
+    "question": "Amazon BedrockのConverse APIでDynamoDB形式の会話履歴を使ったマルチターンチャットを実装する場合、AWS BedrockのPython呼び出し例で指定されているモデルIDとシステムプロンプトは何ですか？",
+    "expected_answer": "モデルIDは「us.anthropic.claude-haiku-4-5-20251001-v1:0」、システムプロンプトは「あなたは、芸人のように面白おかしく関西弁で話すAIアシスタントです。」です。",
+    "golden_chunk_ids": [
+      "13f35f1040538160d43a#21",
+      "8c276cbe645dfc7a68c0#8"
+    ],
+    "article_id": "13f35f1040538160d43a",
+    "difficulty": "multihop",
+    "note": "Amazon Bedrock × Next.jsでAIチャットアプリを作ってみた【サーバーレス構成】 > 4. Bedrock × Lambdaでチャット機能を実装 > Bedrockへのメッセージ送信 ＋ AWS Loginでローカル認証してBedrock APIを呼び出してみた > Bedrockを呼び出すPythonコードの実装 > Bedrockを呼び出すコード"
+  },
+  {
+    "question": "HLEで数学や物理の問題に長いToken Countsが見られることを踏まえ、vLLMのmax-model-lenは何のトークン長から逆算して設定し、HLEのToken Countsは何を示す指標として解釈すべきですか？",
+    "expected_answer": "max-model-lenはモデルへの入力トークン長から逆算して設定し、Token Countsはモデルの出力トークン数として、reasoningモデルの計算量や長考の多さを間接的に示す指標と解釈します。",
+    "golden_chunk_ids": [
+      "159e9cd6d5d5e4dfc2a7#8",
+      "aea213ef9c8358763792#12"
+    ],
+    "article_id": "159e9cd6d5d5e4dfc2a7",
+    "difficulty": "multihop",
+    "note": "vLLMの高速推論を実施した話【HLE】 > 6. 各パラメータの詳細と何故高速化に寄与したか > 6.1 max-model-len ＋ HLEとはなにか > 5. 評価方法 > 評価軸"
+  },
+  {
+    "question": "Viteを使ったReact開発環境と、GPU上でvLLMサーバーおよびJupyter Notebook環境を動かす構成では、Docker環境を利用するためにそれぞれどのような設定・ファイル構成を採用していますか？",
+    "expected_answer": "ViteのReact環境では、package.jsonの開発用スクリプトを`vite --host 0.0.0.0 --port 3000`に変更してホストからアクセスできるようにします。一方、vLLMとJupyter Notebookの構成では、それぞれ専用のDockerfileを作成し、compose.ymlで統合します。",
+    "golden_chunk_ids": [
+      "26efe86b3c2d506850e9#6",
+      "605a7e8fa311115506ea#4"
+    ],
+    "article_id": "26efe86b3c2d506850e9",
+    "difficulty": "multihop",
+    "note": "Vite + DockerでReact環境を構築する > 4. 環境構築の手順 > 4.3 Dockerfile, package.jsonを編集する ＋ GPU環境でvLLMを使ってローカルLLMサーバーを動かしてみた > 4. Dockerfile作成: vLLMサーバー と Jupyter Notebook環境"
+  },
+  {
+    "question": "RAG（外部ドキュメントを検索してLLMに入力し、回答品質を高める技術）をvLLMとinfinityでローカル構築する場合、テキスト生成AIの利用コストを抑えるために、文書Aで示されている代替手法や運用上の工夫には何があり、それぞれどのような注意点がありますか？",
+    "expected_answer": "形態素解析で単語や品詞を抽出したり、埋め込み表現で文間の意味的類似度を測定したりする方法がある。また、複数リクエストの集約や過去の生成結果の再利用もコスト削減に有効だが、集約では品質劣化や費用対効果の低下に注意が必要である。",
+    "golden_chunk_ids": [
+      "37222e6647bcf1c214bb#11",
+      "0cd09952471aa1e7c924#2"
+    ],
+    "article_id": "37222e6647bcf1c214bb",
+    "difficulty": "multihop",
+    "note": "ローカルでRAG用のサーバーを構築してみた[vLLM, infinity使用] > 7. ragの結果 ＋ signate ragコンペに参加してみた > 1. 初めに > 1.3 RAGとは"
+  },
+  {
+    "question": "Qwen3.5-27BをバックエンドにしたClaude Code連携と、houtini/lmを介したClaude CodeからローカルLLMへの委譲では、Markdownファイルの編集をどのように行い、両者に共通して確認できた能力は何ですか？",
+    "expected_answer": "Qwen3.5-27Bの連携では、公式Webサイトから得たClaude Code連携方法をREADME.mdに追加し、READMEの作成をほぼ任せられた。一方、houtini/lmでは既存のmdファイルを読み込んで修正・整理した。共通して、Markdownの内容を読み取り、整理して出力する編集作業をローカルLLMに委譲できた点が確認された。",
+    "golden_chunk_ids": [
+      "49d978509bc45957a6c3#14",
+      "8323c374b39274beddfa#6"
+    ],
+    "article_id": "49d978509bc45957a6c3",
+    "difficulty": "multihop",
+    "note": "[Claude Code連携あり]Qwen3.5-27B動かしてみた > 6. 使用例 > 6.2 Claude Codeの連携方法をURL経由でREADMEに追加してもらう ＋ houtini/lm で Claude Code からローカルLLMに委譲してみた ―― コード生成より「要約・分析」が効く > 5. 試したこと > 5.2 mdファイルの編集"
+  },
+  {
+    "question": "GPU環境でcurlから呼び出したvLLMのQwen3-8B-FP8チャットモデルのレスポンスに含まれる<think>タグ付きの推論部分を除外し、最終回答「私の名前はQwenです。」だけを取り出すには、vLLMのレスポンス内容をどのように処理すればよいですか？",
+    "expected_answer": "vLLMのレスポンスからcontentフィールドを取り出し、Pythonのre.compile(r\"<think>(.*?)</think>\", re.DOTALL)で<think>から</think>までを検出して除外する。残ったnon_think部分が「私の名前はQwenです。」である。",
+    "golden_chunk_ids": [
+      "605a7e8fa311115506ea#13",
+      "90ff1c799adaf72766e7#14"
+    ],
+    "article_id": "605a7e8fa311115506ea",
+    "difficulty": "multihop",
+    "note": "GPU環境でvLLMを使ってローカルLLMサーバーを動かしてみた > 5. 動作確認 > curlを使用してvLLMサーバーのAPIを呼び出す ＋ vLLMでチャットモデルと埋め込みモデルをホストしてみた[Docker, docker-compose使用] > 5. 動作確認 > チャットモデル"
+  },
+  {
+    "question": "LLaVAはLLMの学習段階のうち何を画像に対して実施しており、LLaVA-Medは医療画像を用いてどのような2段階の学習を行うことで医療画像チャットモデルを構築していますか？",
+    "expected_answer": "LLaVAは画像を用いた指示チューニングを実施します。一方、LLaVA-Medは第1段階で医療画像の概念に慣れさせ、第2段階で医療画像を使ったチャット動作を学習するカリキュラム学習を行います。",
+    "golden_chunk_ids": [
+      "7ae8f81007d15be3b28c#2",
+      "ac094cf15928483b16c1#2"
+    ],
+    "article_id": "7ae8f81007d15be3b28c",
+    "difficulty": "multihop",
+    "note": "【Vision Language Model】LLaVAの論文を読んでみた > 1. はじめに > 1.3 LLMの学習方法と本論文における立ち位置 ＋ LLaVA-Med 読んでみた【VQA-RAD学習あり】 > 3. LLaVA-Medの学習方法 > 3.1 学習の概要図"
+  },
+  {
+    "question": "GPU環境でvLLMをOpenAI互換APIとしてサービングし、Rayを使ったマルチノード推論を行う場合、ヘッドノードではどのような起動設定にすればよいですか？",
+    "expected_answer": "ヘッドノードで`vllm serve <モデル名>`を実行し、`--distributed-executor-backend ray`、`--tensor-parallel-size 8`、`--pipeline-parallel-size 2`、`--port $INFER_PORT`を指定する。vLLMはOpenAI互換APIとしてモデルをサービングできる。",
+    "golden_chunk_ids": [
+      "807e499107ae27bacbba#9",
+      "605a7e8fa311115506ea#3"
+    ],
+    "article_id": "807e499107ae27bacbba",
+    "difficulty": "multihop",
+    "note": "vLLMでマルチノードを推論した話【ray使用】 > 5. マルチノードでの推論の実行 > ヘッドノードでのvLLMの起動 ＋ GPU環境でvLLMを使ってローカルLLMサーバーを動かしてみた > 3. vLLMとは"
+  },
+  {
+    "question": "houtini/lmでClaude CodeからローカルLLMへ委譲する方法がコードベースからのドキュメント生成に向いているのはなぜですか。また、その具体例としてQwen3.5-27Bを使って機密性の高いコードからREADME.mdを作成する場合、Claude側のコンテキストやトークン消費にどのような利点がありますか。",
+    "expected_answer": "大きなコードやファイルをローカルLLMに直接読ませて要約・分析させ、Claudeのコンテキストに全文を入れずに済むため、コンテキストの汚染とトークン消費を抑えられます。Qwen3.5-27Bで機密コードからREADME.mdを作成する用途は、このコードベースのドキュメント生成という適性に合致します。",
+    "golden_chunk_ids": [
+      "8323c374b39274beddfa#9",
+      "49d978509bc45957a6c3#12"
+    ],
+    "article_id": "8323c374b39274beddfa",
+    "difficulty": "multihop",
+    "note": "houtini/lm で Claude Code からローカルLLMに委譲してみた ―― コード生成より「要約・分析」が効く > 7. 向いているタスク・向いていないタスク > 7.2 要約・分析系が本来の使いどころ ＋ [Claude Code連携あり]Qwen3.5-27B動かしてみた > 6. 使用例"
+  },
+  {
+    "question": "Amazon Bedrock APIを呼び出す際、AWS CLIの`aws login`によるローカル認証では何を追加インストールする必要があり、Amazon CognitoはNext.jsのAIチャットアプリで認証に関してどのような機能を提供しますか？",
+    "expected_answer": "`aws login`の認証情報を使うには`botocore[crt]`の追加インストールが必要です。一方、Amazon Cognitoはユーザー登録・ログイン・トークン管理を提供し、自前の認証サーバーを不要にします。",
+    "golden_chunk_ids": [
+      "8c276cbe645dfc7a68c0#7",
+      "13f35f1040538160d43a#14"
+    ],
+    "article_id": "8c276cbe645dfc7a68c0",
+    "difficulty": "multihop",
+    "note": "AWS Loginでローカル認証してBedrock APIを呼び出してみた > Bedrockを呼び出すPythonコードの実装 > 重要: `botocore[crt]`の必要性 ＋ Amazon Bedrock × Next.jsでAIチャットアプリを作ってみた【サーバーレス構成】 > 3. Cognito認証 > Cognitoとは"
+  },
+  {
+    "question": "Docker ComposeでvLLMを使ってQwen3-14B-bnb-4bitのチャットモデルをホストする設定と、Qwen3-8B-FP8をホストする設定では、使用するvLLMの起動オプションとGPUメモリ使用量の指定がどのように異なりますか？",
+    "expected_answer": "Qwen3-14B-bnb-4bitではbitsandbytes量子化、ポート8001、GPUメモリ使用率0.75、最大モデル長4096を指定する。一方、Qwen3-8B-FP8ではポートやGPUメモリ使用率などを指定せず、ホスト0.0.0.0だけを指定している。両方ともNVIDIA GPUを1台予約する。",
+    "golden_chunk_ids": [
+      "90ff1c799adaf72766e7#7",
+      "605a7e8fa311115506ea#8"
+    ],
+    "article_id": "90ff1c799adaf72766e7",
+    "difficulty": "multihop",
+    "note": "vLLMでチャットモデルと埋め込みモデルをホストしてみた[Docker, docker-compose使用] > 3. vLLMサーバーの構築 > 構築手順 ＋ GPU環境でvLLMを使ってローカルLLMサーバーを動かしてみた > 4. Dockerfile作成: vLLMサーバー と Jupyter Notebook環境 > docker composeファイル"
+  },
+  {
+    "question": "vLLMで埋め込みモデルに「猫が好きです」「犬が好きです」「動物が好きです」の3文を入力し、クエリ埋め込みも作成する場合、M3-Embeddingの実行結果にはどのような表現が含まれ、dense_vecsの次元数はいくつですか？",
+    "expected_answer": "M3-Embeddingの結果には、トークン単位のcolbert_vecs、文全体のdense_vecs、語彙ごとの重みを表すlexical_weightsが含まれ、dense_vecsは1024次元です。",
+    "golden_chunk_ids": [
+      "9ee2dca105740666e4d1#39",
+      "90ff1c799adaf72766e7#16"
+    ],
+    "article_id": "9ee2dca105740666e4d1",
+    "difficulty": "multihop",
+    "note": "M3-Embeddingを読んでみた > 8. 実際に動かしてみる ＋ vLLMでチャットモデルと埋め込みモデルをホストしてみた[Docker, docker-compose使用] > 5. 動作確認 > 埋め込みモデル > 複数の文章を埋め込む場合"
+  },
+  {
+    "question": "CIFAR-10学習も想定した「vLLM × Qwen3 × cline」のローカルLLM環境と、チャットモデル・埋め込みモデルをホストする「vLLMでチャットモデルと埋め込みモデルをホストしてみた」環境では、Docker構築時の依存パッケージの導入順と、Hugging Faceからダウンロードするモデルにどのような違いがあるか。",
+    "expected_answer": "前者はrequirements.vllm、vLLM 0.8.5、flashinfer-pythonの順に導入し、Qwen3-14B-bnb-4bitだけをダウンロードする。後者はgitとpackaging==25.0を追加し、vLLM 0.8.5、requirements.vllm、flashinfer-pythonの順に導入したうえで、Qwen3-14B-bnb-4bitに加えてQwen3-Embedding-0.6Bもダウンロードする。",
+    "golden_chunk_ids": [
+      "9f092b98e840b819ee52#4",
+      "90ff1c799adaf72766e7#5"
+    ],
+    "article_id": "9f092b98e840b819ee52",
+    "difficulty": "multihop",
+    "note": "vLLM × Qwen3 × cline：cline生成コードでCIFAR-10学習もできるローカルLLM環境の構築例 > 3. vLLMサーバーの構築 > 構築手順 ＋ vLLMでチャットモデルと埋め込みモデルをホストしてみた[Docker, docker-compose使用] > 3. vLLMサーバーの構築 > 構築手順"
+  },
+  {
+    "question": "FaithBenchで行うleave-one-outによるハルシネーション判定の検証と、HLEの評価コードにおけるLLM-as-a-Judgeは、それぞれ何を基準に判定結果を評価しているか。また、HLEの判定で信頼度スコアは利用されているか。",
+    "expected_answer": "FaithBenchでは、判定対象の要約の人手アノテーションを隠し、残りの注釈付き要約を実例としてLLM judgeに与え、その判定を隠していた人手ラベルと照合する。HLEでは、問題の正解とモデル回答が一致しているかをLLM-as-a-Judgeに判定させ、信頼度スコアは利用できない。",
+    "golden_chunk_ids": [
+      "a3f1904eb7d8adaaf8d1#34",
+      "aea213ef9c8358763792#17"
+    ],
+    "article_id": "a3f1904eb7d8adaaf8d1",
+    "difficulty": "multihop",
+    "note": "ハルシネーション判定を few-shot で強くする — 人手アノテーション付き実例をjudgeに渡すFaithJudgeを読んでみた > ハルシネーション判定を few-shot で強くする — 人手アノテーション付き実例をjudgeに渡すFaithJudgeを読んでみた > 6. 実験設計を読み解く > 6.2 Table 2・3 が FaithBench 専用な理由 ＋ HLEとはなにか > 5. 評価方法 > 評価および推論コードについて"
+  },
+  {
+    "question": "LLaVA-Medの学習実験から分かる計算資源に関する注意点と、LLaVAを実際に利用する際のモデル選択に関する注意点は、それぞれどのようなものですか。また、LLaVA-Medの学習枠組みはLLaVAからどのように引き継がれていますか？",
+    "expected_answer": "LLaVA-Medは、事前学習済みLLMとVision Encoderを組み合わせるLLaVAの2段階学習の枠組みを踏襲している。学習には潤沢な計算資源が必要で、A100×8なら短時間でも、RTX4090では量子化とLoRAを使っても4〜5時間かかる場合がある。一方、LLaVAの利用時は、データによっては最新モデルより古いモデルのほうが高性能なこともあるため、複数のモデルを試すべきである。",
+    "golden_chunk_ids": [
+      "ac094cf15928483b16c1#22",
+      "7ae8f81007d15be3b28c#31"
+    ],
+    "article_id": "ac094cf15928483b16c1",
+    "difficulty": "multihop",
+    "note": "LLaVA-Med 読んでみた【VQA-RAD学習あり】 > 6. 感想 ＋ 【Vision Language Model】LLaVAの論文を読んでみた > 5. まとめ > 5.2 個人的な感想"
+  },
+  {
+    "question": "Slurmで、計算ノード上の対話的なbash環境を起動するsrunの設定と、Rayを使ったvLLMマルチノード推論を起動するsbatchスクリプトの設定は、それぞれノード数・GPU数・CPU数・実行時間をどのように指定していますか？",
+    "expected_answer": "srunは1ノード、GPU 0個、CPU 100個、実行時間5時間で対話的bashを起動します。一方、vLLMのsbatchスクリプトは2ノード、各ノード8 GPU、CPU 64個、実行時間6日でRayクラスタを起動します。",
+    "golden_chunk_ids": [
+      "09794dc380328ae5cfb7#9",
+      "807e499107ae27bacbba#3"
+    ],
+    "article_id": "09794dc380328ae5cfb7",
+    "difficulty": "multihop",
+    "note": "slurmの基本コマンドについて > 4. 基本コマンド > インタラクティブジョブの開始(srun) ＋ vLLMでマルチノードを推論した話【ray使用】 > 4. rayによるノード起動と何をしているか > 起動コード"
+  },
+  {
+    "question": "CIFAR-10を使う「[深層学習] SchedulerいらずのOptimizer」の実験と、「vLLM × Qwen3 × cline」の生成コードでは、学習率スケジューラーをどのように扱っており、後者では初期学習率をいくつに設定しているか。",
+    "expected_answer": "前者はスケジューラーを使わないOptimizerを扱うのに対し、後者は依頼後に学習率スケジューラーを導入しており、初期学習率は0.01に設定している。",
+    "golden_chunk_ids": [
+      "0ba5aa1f2909f35fbfed#2",
+      "9f092b98e840b819ee52#12"
+    ],
+    "article_id": "0ba5aa1f2909f35fbfed",
+    "difficulty": "multihop",
+    "note": "[深層学習] SchedulerいらずのOptimizer > 3. 実験条件 ＋ vLLM × Qwen3 × cline：cline生成コードでCIFAR-10学習もできるローカルLLM環境の構築例 > 8. 生成したコード(補足)"
+  },
+  {
+    "question": "Qwen2.5-VL-7B-Instructは、サントリー天然水の森プロジェクトのPDFページをどのように要約し、LLaVA-Benchの「一蘭ラーメン問題」と「イチゴヨーグルト問題」ではそれぞれどのような成績でしたか？",
+    "expected_answer": "サントリー天然水の森について、全国16都府県26カ所・約12,000haを対象に、地域と協働して森林保全を行うプロジェクトだと要約した。LLaVA-Benchでは、一蘭ラーメン問題はヒントがあれば正解できる△、イチゴヨーグルト問題は〇だった。",
+    "golden_chunk_ids": [
+      "0cd09952471aa1e7c924#12",
+      "7ae8f81007d15be3b28c#29"
+    ],
+    "article_id": "0cd09952471aa1e7c924",
+    "difficulty": "multihop",
+    "note": "signate ragコンペに参加してみた > 3. アプローチ > 3.3 PDFの文書化 > PDFの文書化の戦略 ＋ 【Vision Language Model】LLaVAの論文を読んでみた > 4. LLaVA-Bench(In-the-Wild)のデータの一部をいろいろなモデルで推論してみた > 4.5 実験のまとめ"
+  },
+  {
+    "question": "Amazon Bedrockを利用するNext.jsのサーバーレスチャットアプリと、AWS Loginでローカル認証してBedrock APIを呼び出す構成では、認証情報を取得してリクエストを検証・実行する方法にどのような違いがありますか？",
+    "expected_answer": "Next.jsの構成では、Cognitoで取得したIdTokenをBearerトークンとしてAPI Gatewayに送り、Cognito Authorizerで検証後にLambdaへ転送する。一方、AWS Loginの構成ではaws loginによりアクセスキーを管理せずに認証し、botocore[crt]を導入したうえでBedrock Converse APIを呼び出す。",
+    "golden_chunk_ids": [
+      "13f35f1040538160d43a#16",
+      "8c276cbe645dfc7a68c0#12"
+    ],
+    "article_id": "13f35f1040538160d43a",
+    "difficulty": "multihop",
+    "note": "Amazon Bedrock × Next.jsでAIチャットアプリを作ってみた【サーバーレス構成】 > 3. Cognito認証 > 認証フロー ＋ AWS Loginでローカル認証してBedrock APIを呼び出してみた > まとめ > ポイント"
+  },
+  {
+    "question": "vLLMで8台のH200を使ってバッチ推論する際、`tensor-parallel-size=8`によるメモリ帯域やKVキャッシュ分散のメリットを得る一方、複数マシンにまたがって実行する場合はどのような通信上のボトルネックを確認すべきですか？",
+    "expected_answer": "8GPUへの分散でメモリ帯域の並列化やKVキャッシュの分散による高速化が期待できるが、複数マシンにまたがるとノード間通信がボトルネックになる可能性があるため、GPU間の通信速度やネットワーク性能を確認する必要がある。",
+    "golden_chunk_ids": [
+      "159e9cd6d5d5e4dfc2a7#11",
+      "807e499107ae27bacbba#10"
+    ],
+    "article_id": "159e9cd6d5d5e4dfc2a7",
+    "difficulty": "multihop",
+    "note": "vLLMの高速推論を実施した話【HLE】 > 6. 各パラメータの詳細と何故高速化に寄与したか > 6.2 tensor-parallel-size ＋ vLLMでマルチノードを推論した話【ray使用】 > 5. マルチノードでの推論の実行 > ヘッドノードでのvLLMの起動"
+  },
+  {
+    "question": "Vite + DockerのReact環境では、コンテナ内でReactプロジェクトを作成した後に依存パッケージをどのように導入し、GPU環境でvLLMを使うJupyter Notebook環境では、PythonライブラリをDockerfileのどの段階でどのように導入していますか？",
+    "expected_answer": "React環境ではコンテナ内で`npm create vite@latest`を使ってReact・TypeScriptのプロジェクトを作成し、不要なサブディレクトリを整理した後に`npm install`（必要ならaxiosなども追加）を実行します。vLLM用Jupyter Notebook環境では、builderステージで`requirements.notebook`をコピーし、`pip install --prefix=/install -r requirements.notebook`でライブラリを導入してから、appステージへ`COPY --from=builder /install /usr/local`で引き継ぎます。",
+    "golden_chunk_ids": [
+      "26efe86b3c2d506850e9#4",
+      "605a7e8fa311115506ea#7"
+    ],
+    "article_id": "26efe86b3c2d506850e9",
+    "difficulty": "multihop",
+    "note": "Vite + DockerでReact環境を構築する > 4. 環境構築の手順 > 4.2 コンテナ内でReact環境を構築する ＋ GPU環境でvLLMを使ってローカルLLMサーバーを動かしてみた > 4. Dockerfile作成: vLLMサーバー と Jupyter Notebook環境 > Jupyter Notebook 環境用 Dockerfile"
+  },
+  {
+    "question": "vLLMを使った日本語向けのローカルRAGを発展させる際、最終的な回答だけを出力するためにDeepSeek R1やQwen3の推論過程をどのように制御し、埋め込みモデルはどのような方針で選ぶべきですか？",
+    "expected_answer": "vLLMの`--reasoning-parser`を`deepseek_r1`に設定すると`<think></think>`内の思考過程を除いて出力できる。埋め込みモデルは日本語に特化したものを使う方針である。",
+    "golden_chunk_ids": [
+      "37222e6647bcf1c214bb#18",
+      "90ff1c799adaf72766e7#29"
+    ],
+    "article_id": "37222e6647bcf1c214bb",
+    "difficulty": "multihop",
+    "note": "ローカルでRAG用のサーバーを構築してみた[vLLM, infinity使用] > 10. その他いろいろはまった点 > vLLMの引数 > --reasoning-parser引数に関して ＋ vLLMでチャットモデルと埋め込みモデルをホストしてみた[Docker, docker-compose使用] > 9. 今後の展望 > 発展形"
+  },
+  {
+    "question": "GPU環境でvLLMを使ったローカルLLMサーバーと、Infinityを使った埋め込みサーバーでLangChain製のRAGを構築する場合、生成APIと埋め込みAPIにはそれぞれどのクライアントまたはクラスを使うべきですか。また、Infinityの埋め込み処理でLangChainのOpenAIEmbeddingsではなく別のクラスを選ぶ必要があるのはなぜですか？",
+    "expected_answer": "生成APIにはOpenAI公式クライアントを使い、Infinityの埋め込みAPIにはLangChainのInfinityEmbeddingsを使うべきです。InfinityはOpenAI互換APIですが、LangChainのOpenAIEmbeddingsでは正常に動作しないためです。",
+    "golden_chunk_ids": [
+      "605a7e8fa311115506ea#17",
+      "37222e6647bcf1c214bb#16"
+    ],
+    "article_id": "605a7e8fa311115506ea",
+    "difficulty": "multihop",
+    "note": "GPU環境でvLLMを使ってローカルLLMサーバーを動かしてみた > 5. 動作確認 > OpenAIクライアントを使用したAPIの呼び出し ＋ ローカルでRAG用のサーバーを構築してみた[vLLM, infinity使用] > 10. その他いろいろはまった点 > infinityを使用した場合に、使用するLangChainクライアント"
+  },
+  {
+    "question": "LLaVA-Bench(In-the-Wild)でQwen2.5-VL-7Bに画像中の飲食店名を答えさせる際に有効だったヒントと、GPU環境のvLLMサーバーでQwenに名前を尋ねた際の応答形式・内容は、それぞれどのようなものでしたか？",
+    "expected_answer": "飲食店名については、ロゴから答えてよいと明示するヒントが有効でした。vLLMで名前を尋ねた場合は、通常は`<think>...</think>`に思考過程を付けた後に回答し、思考過程を省略すると「私の名前はQwenです。」と返答しました。",
+    "golden_chunk_ids": [
+      "7ae8f81007d15be3b28c#22",
+      "605a7e8fa311115506ea#14"
+    ],
+    "article_id": "7ae8f81007d15be3b28c",
+    "difficulty": "multihop",
+    "note": "【Vision Language Model】LLaVAの論文を読んでみた > 4. LLaVA-Bench(In-the-Wild)のデータの一部をいろいろなモデルで推論してみた > 4.3 Qwen2.5-VL-7B > 一蘭ラーメン問題 ＋ GPU環境でvLLMを使ってローカルLLMサーバーを動かしてみた > 5. 動作確認 > curlを使用してvLLMサーバーのAPIを呼び出す"
+  }
+]

@@ -1,0 +1,122 @@
+[
+  {
+    "question": "こんにちは。今日はいい天気ですね",
+    "expected_skill": "direct",
+    "category": "greeting",
+    "note": "純粋な挨拶。固有名詞も事実問い合わせもない"
+  },
+  {
+    "question": "ありがとう、助かりました",
+    "expected_skill": "direct",
+    "category": "greeting",
+    "note": "社交的な発話"
+  },
+  {
+    "question": "さっきの回答、もう少し短くまとめてくれる？",
+    "expected_skill": "direct",
+    "category": "conversation-meta",
+    "note": "会話メタ発言。description に明示されている典型例"
+  },
+  {
+    "question": "今の説明、もう少し詳しく言い換えてください",
+    "expected_skill": "direct",
+    "category": "conversation-meta",
+    "note": "会話メタ発言。直前の出力が対象で文書参照は不要"
+  },
+  {
+    "question": "あなたはどんなことができますか？",
+    "expected_skill": "direct",
+    "category": "conversation-meta",
+    "note": "アシスタント自身についてのメタ質問"
+  },
+  {
+    "question": "一般論として、技術記事は結論から書くのと背景から書くのとではどちらが読まれやすいと思いますか？",
+    "expected_skill": "direct",
+    "category": "opinion",
+    "note": "「一般論として」と明示。固有名詞なし、事実の正確性に依存しない意見"
+  },
+  {
+    "question": "仮の話ですが、検証環境のGPUが1枚しかない場合と潤沢にある場合とで、開発の進め方の考え方はどう変わると思いますか？",
+    "expected_skill": "direct",
+    "category": "hypothetical",
+    "note": "「仮の話ですが」と前置き。GPU は一般語であり特定文書を指さない"
+  },
+  {
+    "question": "1024 × 768 はいくつになりますか？",
+    "expected_skill": "direct",
+    "category": "calculation",
+    "note": "文書を参照しない単純計算"
+  },
+  {
+    "question": "ブログ記事のタイトルを5案ブレインストーミングしてください",
+    "expected_skill": "direct",
+    "category": "brainstorm",
+    "note": "事実の正確性に依存しない発想タスク"
+  },
+  {
+    "question": "vLLM って結局どうなんですか？",
+    "expected_skill": "search",
+    "category": "domain-casual",
+    "note": "雑談的な口調だが vLLM という固有名詞を含む。非対称設計では検索側に倒す"
+  },
+  {
+    "question": "max-model-len ってどれくらいにしておけばいいんだっけ？",
+    "expected_skill": "search",
+    "category": "domain-casual",
+    "note": "「だっけ」というくだけた口調。具体的なパラメータ名を含むので検索"
+  },
+  {
+    "question": "infinity ってなんで使ったんだっけ？",
+    "expected_skill": "search",
+    "category": "domain-casual",
+    "note": "口語的だが選定理由という文書固有の事実を問うている"
+  },
+  {
+    "question": "LLaVA-Med の学習って何段階だったか覚えてる？",
+    "expected_skill": "search",
+    "category": "domain-casual",
+    "note": "会話的な問いかけの形をとった、文書固有の事実確認"
+  },
+  {
+    "question": "前に書いた記事だと GPU メモリの設定ってどうしてましたか？",
+    "expected_skill": "search",
+    "category": "domain-casual",
+    "note": "会話メタ発言に見えるが、参照先は過去の記事＝文書。設定値という具体的事実を問う"
+  },
+  {
+    "question": "Slurm でジョブを投入するコマンドを教えてください",
+    "expected_skill": "search",
+    "category": "domain-explicit",
+    "note": "固有名詞＋具体的な手順。明確に検索"
+  },
+  {
+    "question": "Qwen3-14B-bnb-4bit と Qwen3-8B-FP8 では GPU メモリの指定はどう違いますか？",
+    "expected_skill": "search",
+    "category": "domain-explicit",
+    "note": "バージョン間の比較。description が明示的に検索対象としている類型"
+  },
+  {
+    "question": "埋め込みモデルの選定基準について、根拠を示して説明してください",
+    "expected_skill": "search",
+    "category": "domain-explicit",
+    "note": "「根拠を示して」は description に列挙された明示的なトリガー語彙"
+  },
+  {
+    "question": "SIGNATE の RAG コンペの評価指標はどうやって算出されていましたか？",
+    "expected_skill": "search",
+    "category": "domain-explicit",
+    "note": "固有名詞＋算出方法という文書固有の事実"
+  },
+  {
+    "question": "トークンとは何ですか？",
+    "expected_skill": "search",
+    "category": "jargon-but-general",
+    "note": "一般知識で答えられる専門用語風の質問。非対称設計では「文書に存在しうる情報を含む」ため検索側に倒す想定。ここで direct が選ばれるのは設計意図からの逸脱だが、実害は小さい部類"
+  },
+  {
+    "question": "GPU と CPU の違いを簡単に教えてください",
+    "expected_skill": "search",
+    "category": "jargon-but-general",
+    "note": "同上。一般知識で十分答えられるが、非対称設計では検索に倒すのが期待挙動"
+  }
+]
