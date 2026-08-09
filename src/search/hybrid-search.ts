@@ -24,17 +24,32 @@ function getReranker(): Promise<lancedb.rerankers.RRFReranker> {
   return rerankerPromise;
 }
 
-export async function hybridSearch(query: string, k: number): Promise<SearchHit[]> {
+export interface HybridSearchOptions {
+  /**
+   * 指定した article_id を検索対象から除外する。
+   * パターン3の記事多様化（`search-fetch-loop.ts` の `diversifySeed`）専用。
+   * パターン1・2は使わないので、渡さない限り従来と挙動は変わらない。
+   */
+  excludeArticleIds?: string[];
+}
+
+export async function hybridSearch(
+  query: string,
+  k: number,
+  opts?: HybridSearchOptions,
+): Promise<SearchHit[]> {
   const table = await openChunksTable();
   const [vector, reranker] = await Promise.all([embedQuery(query), getReranker()]);
 
-  const rows = (await table
-    .query()
-    .fullTextSearch(query)
-    .nearestTo(vector)
-    .rerank(reranker)
-    .limit(k)
-    .toArray()) as RawHit[];
+  let q = table.query().fullTextSearch(query).nearestTo(vector).rerank(reranker);
+  if (opts?.excludeArticleIds?.length) {
+    const list = opts.excludeArticleIds
+      .map((id) => `'${id.replace(/'/g, "''")}'`)
+      .join(",");
+    q = q.where(`article_id NOT IN (${list})`);
+  }
+
+  const rows = (await q.limit(k).toArray()) as RawHit[];
 
   return rows.map(toSearchHit);
 }

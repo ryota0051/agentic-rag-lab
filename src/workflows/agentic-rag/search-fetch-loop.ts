@@ -5,7 +5,8 @@ import { FetchCache, fetchChunks } from "../../search/fetch.js";
 import { hybridSearch } from "../../search/hybrid-search.js";
 import { readUsage } from "../../shared/generate.js";
 import { FINAL_CONTEXT_K, GENERATION_MODEL } from "../../shared/llm-client.js";
-import type { FetchResult } from "../../shared/types.js";
+import type { FetchResult, SearchHit } from "../../shared/types.js";
+import { decomposeQuery } from "./query-decompose.js";
 
 /**
  * 検索スキルの内部処理: search → 評価 → fetch のループ。
@@ -121,10 +122,91 @@ function createSearchTools(collected: FetchResult[], queryTrace: string[]) {
   return { searchTool, fetchTool, counter };
 }
 
+/**
+ * 補助クエリ（分解・多様化）の検索結果を、chunk_id で重複排除して1本にまとめる。
+ * 同じ chunk が複数の補助クエリにヒットした場合は高いほうのスコアを採用する。
+ */
+function dedupeByScore(hitLists: SearchHit[][]): SearchHit[] {
+  const byId = new Map<string, SearchHit>();
+  for (const hits of hitLists) {
+    for (const hit of hits) {
+      const existing = byId.get(hit.chunk_id);
+      if (!existing || hit.score > existing.score) {
+        byId.set(hit.chunk_id, hit);
+      }
+    }
+  }
+  return [...byId.values()].sort((a, b) => b.score - a.score);
+}
+
+/** 補助クエリから積み増せる候補数の上限 */
+const MAX_SUPPLEMENTARY = 4;
+
+/**
+ * 主クエリ（元の質問）の上位候補は無条件に残し、補助クエリ（分解・多様化）の候補は
+ * 主クエリにない chunk_id を、スコアで競合させずに追加枠として足す。
+ *
+ * ## なぜ生スコアで統合しないか
+ *
+ * 異なるクエリの RRF スコアをそのまま比較して統合すると、対象を狭めた補助クエリが
+ * 相対的に高いスコアを出し、**単発で正解できていた主クエリの候補を押し出す**ことがあった。
+ * 実測（Amazon Bedrock/Cognito の質問）: 元の質問1本では golden 2件とも正解していたのに、
+ * 分解後は片方の golden chunk が補助クエリ側の候補に押し出されて不正解に転落した。
+ * → docs/decisions/0012-protect-primary-candidates.md
+ */
+function mergeProtectingPrimary(primary: SearchHit[], supplementary: SearchHit[]): SearchHit[] {
+  const seen = new Set(primary.map((h) => h.chunk_id));
+  const extra = supplementary.filter((h) => !seen.has(h.chunk_id)).slice(0, MAX_SUPPLEMENTARY);
+  return [...primary, ...extra];
+}
+
+/** chunk_id は `${article_id}#${chunk_index}` 形式（shared/types.ts） */
+function articleIdOf(chunkId: string): string {
+  return chunkId.split("#")[0]!;
+}
+
+/** 上位何件を見て記事の偏りを判定するか */
+const DIVERSITY_CHECK_TOP_N = 5;
+
+/**
+ * 種検索の上位候補が単一記事に偏っている場合、その記事を除外して追加検索し、
+ * 別記事の候補を混ぜる。
+ *
+ * golden set の multihop 質問は「自己完結した自然な1文」になるよう意図的に作られており
+ * （`evals/generate-multihop-set.ts`）、質問文からは2記事にまたがる構成だと判定できない
+ * ことが多い（`query-decompose.ts` の分解が表層の対象分離にしか効かない理由）。
+ * multihop 自体が「あるチャンクの近傍を別記事から引く」という作り方をしているので、
+ * 検索側でも対称的に「上位が1記事に偏っていたら別記事を足す」ことで、
+ * 質問の書き方に依存しない多様化を狙う → docs/decisions/0011-article-diversity-seed.md
+ */
+async function diversifySeed(
+  question: string,
+  hits: SearchHit[],
+  queryTrace: string[],
+): Promise<SearchHit[]> {
+  const topArticles = new Set(hits.slice(0, DIVERSITY_CHECK_TOP_N).map((h) => articleIdOf(h.chunk_id)));
+  if (topArticles.size > 1) return hits;
+
+  const dominant = [...topArticles][0];
+  if (!dominant) return hits;
+
+  const otherArticle = await hybridSearch(question, SEARCH_K, { excludeArticleIds: [dominant] });
+  queryTrace.push(`${question}（記事 ${dominant} を除外）`);
+  return mergeProtectingPrimary(hits, otherArticle);
+}
+
 export async function runSearchFetchLoop(
   question: string,
   /** 前ラウンドの充足チェックで指摘された不足。2周目以降に渡される */
   missingHint?: string,
+  /**
+   * 複合質問を対象ごとのクエリに分解してから種検索するか。
+   * 収集1ラウンド目（元の質問そのもの）でのみ true にする想定。
+   * 充足チェックの再収集や確信度チェックの追加検索は、既に対象が絞られた
+   * followup クエリを渡されるため分解の対象ではない。
+   * → docs/decisions/0010-query-decomposition.md
+   */
+  decompose = false,
 ): Promise<LoopOutcome> {
   const collected: FetchResult[] = [];
   const queryTrace: string[] = [];
@@ -177,9 +259,29 @@ export async function runSearchFetchLoop(
   // 言い換えは「1回目で足りなかったとき」の手段として2ターン目以降に回す。
   //
   // architecture.md の「1ターン目は必ずハイブリッド検索を通す」というガイドとも一致する。
-  const seeded = await hybridSearch(question, SEARCH_K);
-  queryTrace.push(question);
+  //
+  // 複合質問の場合、元の質問1本だけでは対象の一方に検索結果が偏ることがある
+  // （docs/decisions/0010-query-decomposition.md）。分解が有効なら、対象ごとの
+  // クエリでも並行して検索し、候補を統合する。
+  let decomposeUsage = { inputTokens: 0, outputTokens: 0, llmCalls: 0 };
+  let subQueries: string[] = [];
+  if (decompose) {
+    const d = await decomposeQuery(question);
+    decomposeUsage = { inputTokens: d.inputTokens, outputTokens: d.outputTokens, llmCalls: d.llmCalls };
+    subQueries = d.subQueries;
+  }
+
+  const seedQueries = [question, ...subQueries];
+  const seedHitLists = await Promise.all(seedQueries.map((q) => hybridSearch(q, SEARCH_K)));
+  queryTrace.push(...seedQueries);
+  // 分解しても種検索は概念上「1ターン目」のまま——エージェント自身の判断ではなく
+  // 前処理なので、search ツールの残り予算（MAX_TURNS）は削らない
   counter.searchCalls++;
+
+  const seeded =
+    subQueries.length > 0
+      ? mergeProtectingPrimary(seedHitLists[0] ?? [], dedupeByScore(seedHitLists.slice(1)))
+      : await diversifySeed(question, seedHitLists[0] ?? [], queryTrace);
 
   const seededList = seeded
     .map(
@@ -190,7 +292,11 @@ export async function runSearchFetchLoop(
 
   const parts = [
     question,
-    "\n---\n元の質問をそのまま検索した結果です。まずここから読むべきものを選んで fetch してください。\n",
+    subQueries.length > 0
+      ? "\n---\nこの質問は複数の対象を含むと判断し、対象ごとに分けて検索した結果を統合しています。" +
+        `（分解したクエリ: ${subQueries.map((q) => `「${q}」`).join(" / ")}）` +
+        "片方の対象だけで満足せず、両方に対応する根拠を過不足なく fetch してください。\n"
+      : "\n---\n元の質問をそのまま検索した結果です。まずここから読むべきものを選んで fetch してください。\n",
     seededList,
   ];
   if (missingHint) {
@@ -213,8 +319,8 @@ export async function runSearchFetchLoop(
     docs,
     turns: queryTrace.length,
     queryTrace,
-    inputTokens,
-    outputTokens,
-    llmCalls: result.steps?.length ?? 1,
+    inputTokens: inputTokens + decomposeUsage.inputTokens,
+    outputTokens: outputTokens + decomposeUsage.outputTokens,
+    llmCalls: (result.steps?.length ?? 1) + decomposeUsage.llmCalls,
   };
 }

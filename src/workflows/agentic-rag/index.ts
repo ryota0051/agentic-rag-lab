@@ -78,7 +78,10 @@ export async function runAgenticRag(question: string): Promise<RagRunResult> {
   let missingHint: string | undefined;
 
   for (let round = 0; round < MAX_COLLECTION_ROUNDS; round++) {
-    const loop = await runSearchFetchLoop(question, missingHint);
+    // 分解は元の質問（複合質問かどうか）にのみ意味がある。2ラウンド目以降は
+    // missingHint で対象を絞った再収集なので分解しない
+    // → docs/decisions/0010-query-decomposition.md
+    const loop = await runSearchFetchLoop(question, missingHint, round === 0);
     accumulate(loop);
     queryTrace.push(...loop.queryTrace);
     turns += loop.turns;
