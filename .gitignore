@@ -10,3 +10,6 @@ traces/
 
 # 評価の中間生成物。レビュー後の golden-set.json 本体はコミットする
 evals/golden-set.draft.json
+
+*.draft.md
+*.published.md
