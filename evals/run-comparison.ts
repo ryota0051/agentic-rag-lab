@@ -6,8 +6,12 @@ import { runHybridRag } from "../src/workflows/hybrid-rag.js";
 import { runNaiveRag } from "../src/workflows/naive-rag.js";
 import { isMain } from "../src/shared/is-main.js";
 import { withRetry } from "../src/shared/retry.js";
-import { FINAL_CONTEXT_K, GENERATION_MODEL } from "../src/shared/llm-client.js";
-import type { RagPattern, RagRunResult } from "../src/shared/types.js";
+import {
+  FINAL_CONTEXT_K,
+  GENERATION_MODEL_LABEL,
+  LLM_BACKEND,
+} from "../src/shared/llm-client.js";
+import type { FetchScope, RagPattern, RagRunResult } from "../src/shared/types.js";
 import type { Difficulty, GoldenItem } from "./generate-golden-set.js";
 import { selectSkill } from "../src/workflows/agentic-rag/skill-select.js";
 import {
@@ -52,8 +56,13 @@ const PATTERNS: RagPattern[] = ["naive", "hybrid", "agentic"];
  * gpt-5.6-luna の TPM 上限は 200,000。エージェント的RAGは1問1万トークン超を使うため、
  * 3並列だと容易に上限へ達する（実際に初回実行が 429 で全損した）。
  * レイテンシ計測が混み合いで歪むのも避けたいので控えめにする。
+ *
+ * ローカルバックエンドでは単一GPUを奪い合うだけで並列の得が無く、レイテンシ計測も歪むので
+ * 既定を 1 に落とす（`EVAL_CONCURRENCY` で明示指定すればそちらが優先される）。
  */
-const CONCURRENCY = Number(process.env.EVAL_CONCURRENCY ?? 2);
+const CONCURRENCY = Number(
+  process.env.EVAL_CONCURRENCY ?? (LLM_BACKEND === "local" ? 1 : 2),
+);
 
 interface RunRecord {
   item: GoldenItem;
@@ -147,6 +156,12 @@ async function checkpoint(records: RunRecord[], failures: FailedRun[]): Promise<
 }
 
 function bucketTable(records: RunRecord[], difficulty: Difficulty): string {
+  // --difficulty で絞ると片方のバケットが空になる。0埋めの表を出すと
+  // 「全パターンが0点だった」と読めてしまうので、対象外だと明示する
+  if (!records.some((r) => r.item.difficulty === difficulty)) {
+    return `（このバケットは今回の実行対象外です。\`--difficulty\` で絞り込んでいます）`;
+  }
+
   const rows = PATTERNS.map((p) => {
     const subset = records.filter(
       (r) => r.result.pattern === p && r.item.difficulty === difficulty,
@@ -171,6 +186,98 @@ function bucketTable(records: RunRecord[], difficulty: Difficulty): string {
     `> 「平均chunk数」は範囲拡張で結合されたチャンクも数えている。` +
     `パターン3は fetch の scope 次第で1件の根拠に複数チャンクが入るため、` +
     `件数だけでなく実際に与えた情報量（文字数）も併記している。`
+  );
+}
+
+/**
+ * パターン3のツール使用の内訳。
+ *
+ * ここが「エージェントを駆動するLLMを差し替えると何が変わるか」の本体。
+ * recall やターン数だけを見ていると、**ツールを使えていないのか、使った上で不要と判断したのか**
+ * が区別できない（`ToolUseStats` のコメント参照）。
+ */
+function toolUseSection(records: RunRecord[]): string {
+  const agentic = records.filter((r) => r.result.pattern === "agentic");
+  if (agentic.length === 0) return "パターン3を実行していないため記録なし。";
+
+  // 旧レポート（計測導入前）を baseline から読み込むと toolUse が無い。
+  // **平均は計測できた実行だけで取る。** 未計測を 0 として混ぜると、
+  // 「ツールを使わなかった」ことにされて平均が不当に下がる
+  const stats = agentic
+    .map((r) => r.result.toolUse)
+    .filter((t): t is NonNullable<typeof t> => t !== undefined);
+
+  if (stats.length === 0) {
+    return (
+      "**未計測**（ツール使用の計測を導入する前の実行結果を再利用しています）。" +
+      "この節を比較に使う場合は、baseline 側も計測付きで取り直すこと。"
+    );
+  }
+  const measured = stats.length;
+
+  const scopes: FetchScope[] = ["chunk_only", "with_neighbors", "whole_section"];
+  const scopeTotal = scopes.reduce(
+    (acc, s) => acc + stats.reduce((a, t) => a + t.fetchScopes[s], 0),
+    0,
+  );
+
+  const sum = (pick: (t: (typeof stats)[number]) => number) =>
+    stats.reduce((a, t) => a + pick(t), 0);
+
+  const failures = sum((t) => t.structuredOutputFailures);
+  const blocked = sum((t) => t.searchBlockedCalls);
+  const unresolved = sum((t) => t.fetchUnresolvedIds);
+  const noop = sum((t) => t.fetchNoOpCalls);
+
+  const rows = [
+    `| search 呼び出し | ${mean(stats.map((t) => t.searchToolCalls)).toFixed(2)} | ${sum((t) => t.searchToolCalls)} |`,
+    `| fetch 呼び出し | ${mean(stats.map((t) => t.fetchToolCalls)).toFixed(2)} | ${sum((t) => t.fetchToolCalls)} |`,
+    `| search 上限超過で拒否 | ${mean(stats.map((t) => t.searchBlockedCalls)).toFixed(2)} | ${blocked} |`,
+    `| fetch 空振り（取得済みの再要求） | ${mean(stats.map((t) => t.fetchNoOpCalls)).toFixed(2)} | ${noop} |`,
+    `| fetch 未解決ID | ${mean(stats.map((t) => t.fetchUnresolvedIds)).toFixed(2)} | ${unresolved} |`,
+    `| 構造化出力の失敗 | ${mean(stats.map((t) => t.structuredOutputFailures)).toFixed(2)} | ${failures} |`,
+  ].join("\n");
+
+  const scopeRows = scopes
+    .map((s) => {
+      const n = stats.reduce((a, t) => a + t.fetchScopes[s], 0);
+      return `| ${s} | ${n} | ${scopeTotal ? pct(n / scopeTotal) : "-"} |`;
+    })
+    .join("\n");
+
+  const warnings: string[] = [];
+  if (failures > 0) {
+    warnings.push(
+      `> ⚠️ **構造化出力が ${failures} 回失敗しています。** スキル選択は "search"、` +
+        "充足チェック・確信度チェックは sufficient=true にフォールバックする実装なので、" +
+        "**ターン数分布とスキル選択精度は「モデルの判断」ではなく「フォールバックの結果」を" +
+        "含んでいます。** この実験の該当数値を能力比較の根拠に使わないこと。",
+    );
+  }
+  if (blocked > 0) {
+    warnings.push(
+      `> 検索回数の上限を ${blocked} 回超過して呼びに来ています` +
+        "（プロンプトの回数制約に従えていない）。ツール側で機械的に打ち切っているため" +
+        "実害はないが、指示追従性の差として記録に値する。",
+    );
+  }
+  if (unresolved > 0) {
+    warnings.push(
+      `> 本文が返らなかった chunk_id の要求が ${unresolved} 件あります。` +
+        "存在しないIDの生成とコンテキスト予算切れの**合算**なので、" +
+        "内訳は raw JSON と突き合わせて確認すること。",
+    );
+  }
+
+  return (
+    `対象: パターン3 ${agentic.length} 件（うち計測あり ${measured} 件）\n\n` +
+    `| 項目 | 1問あたり平均 | 合計 |\n|---|---|---|\n${rows}\n\n` +
+    `### fetch の scope 選択（読む範囲を自分で決められているか）\n\n` +
+    `| scope | 回数 | 割合 |\n|---|---|---|\n${scopeRows}\n\n` +
+    `> \`chunk_only\` に張り付いている場合、search/fetch を分離した狙い` +
+    `（docs/decisions/0003）が活きていない。範囲拡張を使い分けられるかは、` +
+    `エージェントを駆動するモデルの能力差が最も出やすい箇所。\n` +
+    (warnings.length ? `\n${warnings.join("\n>\n")}\n` : "")
   );
 }
 
@@ -216,9 +323,16 @@ function buildReport(
   return `# 比較実験: ナイーブRAG vs ハイブリッド vs エージェント的RAG
 
 - 実施日: ${date}
-- 生成モデル: \`${GENERATION_MODEL}\`（3パターン共通）
+- 生成モデル: \`${GENERATION_MODEL_LABEL}\`（3パターン共通）
+- バックエンド: \`${LLM_BACKEND}\`${
+    LLM_BACKEND === "local"
+      ? "（サーバ設定は `docker/compose.yaml` を参照。文脈長・量子化・reasoning_effort はそこに固定されている）"
+      : ""
+  }
+- 埋め込み・LanceDBインデックス: **無変更**（検索側は固定。変数は生成・エージェントのLLMのみ）
 - golden set: ${items.length} 問（easy ${easyN} / multihop ${mhN}）
 - 最終コンテキスト件数: k=${FINAL_CONTEXT_K}（3パターン共通の上限）
+- 同時実行数: ${CONCURRENCY}
 - 総実行時間: ${(elapsedMs / 1000 / 60).toFixed(1)} 分
 
 ## easy（単発検索で引ける想定・対照群）
@@ -241,6 +355,10 @@ ${Object.entries(turnDist)
 
 > ここでの「ターン」は**確信度チェックによる再突入も含めた総検索回数**。
 > 1回のループ内の上限（\`MAX_TURNS\`）とは別物なので、上限を超える値が出る。
+
+## ツール使用の内訳（パターン3のみ）
+
+${toolUseSection(records)}
 
 ## スキル選択精度（boundary-cases ${skillScore.n} 件）
 
@@ -318,11 +436,35 @@ function parseArgs() {
     throw new Error(`不正なパターン: ${invalid.join(", ")}（有効: ${PATTERNS.join(", ")}）`);
   }
 
+  // 難易度で golden set を絞る。ローカルバックエンドは実質直列で時間がかかるため、
+  // エージェント化の主戦場である multihop だけを回せるようにしてある
+  const difficultyArg = get("difficulty");
+  const DIFFICULTIES: Difficulty[] = ["easy", "multihop"];
+  if (difficultyArg && !DIFFICULTIES.includes(difficultyArg as Difficulty)) {
+    throw new Error(
+      `不正な難易度: ${difficultyArg}（有効: ${DIFFICULTIES.join(", ")}）`,
+    );
+  }
+
   return {
     patterns,
     baseline: get("baseline"),
     reuseSkill: argv.includes("--reuse-skill"),
+    difficulty: difficultyArg as Difficulty | undefined,
+    slug: get("slug"),
   };
+}
+
+/**
+ * レポートのファイル名スラグ。
+ *
+ * 固定名にすると、同じ日にクラウド版とローカル版を回したときに
+ * **片方がもう片方を上書きして消える**（1実験1ファイルという約束が壊れる）。
+ * 既定でバックエンドと難易度を織り込み、`--slug=` で上書きできるようにする。
+ */
+function defaultSlug(difficulty?: Difficulty): string {
+  const backend = LLM_BACKEND === "local" ? "local" : "cloud";
+  return [backend, difficulty ?? "full", "naive-vs-hybrid-vs-agentic"].join("-");
 }
 
 /** 走らせないパターンの結果を過去の実行から読み込む */
@@ -346,20 +488,26 @@ async function writeReport(
   skillResults: { case: BoundaryCase; selected: Skill }[],
   failures: FailedRun[],
   started: number,
+  slug: string,
 ): Promise<void> {
   await mkdir(EXPERIMENTS_DIR, { recursive: true });
   const outPath = path.join(
     EXPERIMENTS_DIR,
-    `${new Date().toISOString().slice(0, 10)}-naive-vs-hybrid-vs-agentic.md`,
+    `${new Date().toISOString().slice(0, 10)}-${slug}.md`,
   );
   await writeFile(outPath, report, "utf8");
 
-  // 生ログも残す。後から失敗モードを掘り返せるようにする
-  await writeFile(
-    path.join(EXPERIMENTS_DIR, "raw-latest.json"),
-    JSON.stringify({ records, skillResults, failures }, null, 2),
-    "utf8",
+  // 生ログも残す。後から失敗モードを掘り返せるようにする。
+  // raw-latest.json は「直近の実行」を指す固定名だが、それだけだと同じ日に
+  // クラウド版とローカル版を回したときに互いを上書きしてしまうので、
+  // スラグ付きのコピーも書いて --baseline から名指しできるようにする
+  const raw = JSON.stringify({ records, skillResults, failures }, null, 2);
+  const rawPath = path.join(
+    EXPERIMENTS_DIR,
+    `raw-${new Date().toISOString().slice(0, 10)}-${slug}.json`,
   );
+  await writeFile(rawPath, raw, "utf8");
+  await writeFile(path.join(EXPERIMENTS_DIR, "raw-latest.json"), raw, "utf8");
 
   const elapsed = Date.now() - started;
   console.log(`\n完了（${(elapsed / 1000 / 60).toFixed(1)} 分）`);
@@ -370,6 +518,7 @@ async function writeReport(
     );
   }
   console.log(`レポート: ${outPath}`);
+  console.log(`生ログ:   ${rawPath}`);
   console.log("考察セクションは自分の言葉で埋めてください。");
 }
 
@@ -377,12 +526,24 @@ async function main() {
   const started = Date.now();
   const args = parseArgs();
 
-  const items = JSON.parse(await readFile(GOLDEN_PATH, "utf8")) as GoldenItem[];
+  const allItems = JSON.parse(await readFile(GOLDEN_PATH, "utf8")) as GoldenItem[];
+  const items = args.difficulty
+    ? allItems.filter((i) => i.difficulty === args.difficulty)
+    : allItems;
+  if (items.length === 0) {
+    throw new Error(`難易度 ${args.difficulty} の質問が golden set にありません`);
+  }
   const boundaryCases = JSON.parse(
     await readFile(BOUNDARY_PATH, "utf8"),
   ) as BoundaryCase[];
 
+  const slug = args.slug ?? defaultSlug(args.difficulty);
   const reused = PATTERNS.filter((p) => !args.patterns.includes(p));
+  if (args.difficulty) {
+    console.log(
+      `難易度 ${args.difficulty} のみを対象にします（${allItems.length} 問中 ${items.length} 問）`,
+    );
+  }
   console.log(
     `golden set ${items.length} 問 × ${args.patterns.length}パターン = ` +
       `${items.length * args.patterns.length} 実行`,
@@ -402,10 +563,18 @@ async function main() {
 
   if (reused.length && args.baseline) {
     const { records: old } = await loadBaselineRecords(args.baseline, reused);
-    if (old.length === 0) {
-      throw new Error(`${args.baseline} に ${reused.join(", ")} の結果がありません`);
+    // 難易度で絞っている場合、baseline 側も同じ問題集合に揃える。
+    // 揃えないと再利用したパターンだけ easy を含んだまま集計され、
+    // バケット別の表が別々の母数で並ぶ
+    const questions = new Set(items.map((i) => i.question));
+    const scoped = old.filter((r) => questions.has(r.item.question));
+    if (scoped.length === 0) {
+      throw new Error(
+        `${args.baseline} に ${reused.join(", ")} の結果がありません` +
+          (args.difficulty ? `（難易度 ${args.difficulty} で絞り込んだ結果）` : ""),
+      );
     }
-    records.push(...old);
+    records.push(...scoped);
   }
 
   for (const pattern of args.patterns) {
@@ -422,7 +591,7 @@ async function main() {
       console.log(`\n[skill] ${args.baseline} の判定結果を再利用します（${skill.length} 件）`);
       const reusedScore = scoreSkillSelection(skill);
       const report = buildReport(records, reusedScore, items, Date.now() - started, failures);
-      await writeReport(report, records, skill, failures, started);
+      await writeReport(report, records, skill, failures, started, slug);
       return;
     }
     console.warn("[skill] baseline に判定結果がないため通常どおり実行します");
@@ -448,7 +617,7 @@ async function main() {
   const skillScore = scoreSkillSelection(skillResults);
 
   const report = buildReport(records, skillScore, items, Date.now() - started, failures);
-  await writeReport(report, records, skillResults, failures, started);
+  await writeReport(report, records, skillResults, failures, started, slug);
 }
 
 if (isMain(import.meta.url)) {

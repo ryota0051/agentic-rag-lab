@@ -41,6 +41,15 @@ async function main() {
         `tokens=${result.usage.inputTokens}/${result.usage.outputTokens} ` +
         `latency=${result.latencyMs}ms`,
     );
+    if (result.toolUse) {
+      const t = result.toolUse;
+      console.log(
+        `ツール: search=${t.searchToolCalls}(拒否${t.searchBlockedCalls}) ` +
+          `fetch=${t.fetchToolCalls}(空振り${t.fetchNoOpCalls} 未解決ID${t.fetchUnresolvedIds}) ` +
+          `scope=${JSON.stringify(t.fetchScopes)} ` +
+          `構造化出力の失敗=${t.structuredOutputFailures}`,
+      );
+    }
   }
 }
 

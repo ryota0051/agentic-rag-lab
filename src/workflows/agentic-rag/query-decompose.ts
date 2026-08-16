@@ -59,6 +59,11 @@ export interface DecomposeOutcome {
   inputTokens: number;
   outputTokens: number;
   llmCalls: number;
+  /**
+   * 構造化出力が取れずフォールバックしたか。
+   * これを返さないと「分解しなかった」と「分解できなかった」が区別できない
+   */
+  structuredOutputFailed: boolean;
 }
 
 export async function decomposeQuery(question: string): Promise<DecomposeOutcome> {
@@ -75,5 +80,6 @@ export async function decomposeQuery(question: string): Promise<DecomposeOutcome
     inputTokens,
     outputTokens,
     llmCalls: result.steps?.length ?? 1,
+    structuredOutputFailed: verdict === undefined,
   };
 }

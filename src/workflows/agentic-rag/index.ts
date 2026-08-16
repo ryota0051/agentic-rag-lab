@@ -2,7 +2,8 @@ import { toCitations } from "../../shared/answer-prompt.js";
 import { collectRetrievedChunkIds, countContextChars } from "../../shared/evidence-stats.js";
 import { generateAnswer, generateDirectAnswer } from "../../shared/generate.js";
 import { FINAL_CONTEXT_K } from "../../shared/llm-client.js";
-import type { FetchResult, RagRunResult } from "../../shared/types.js";
+import { emptyToolUseStats } from "../../shared/types.js";
+import type { FetchResult, RagRunResult, ToolUseStats } from "../../shared/types.js";
 import { MAX_RECHECKS, checkConfidence } from "./confidence-check.js";
 import { checkEvidence } from "./evidence-check.js";
 
@@ -34,15 +35,32 @@ export async function runAgenticRag(question: string): Promise<RagRunResult> {
   let outputTokens = 0;
   let llmCalls = 0;
   const queryTrace: string[] = [];
+  const toolUse = emptyToolUseStats();
 
   const accumulate = (u: {
     inputTokens: number;
     outputTokens: number;
     llmCalls: number;
+    /** 構造化出力を使うステップだけが返す。ツールを持つステップは toolUse 側で合算する */
+    structuredOutputFailed?: boolean;
   }) => {
     inputTokens += u.inputTokens;
     outputTokens += u.outputTokens;
     llmCalls += u.llmCalls;
+    if (u.structuredOutputFailed) toolUse.structuredOutputFailures++;
+  };
+
+  /** search/fetch ループ内で数えたツール使用を実行全体に足し込む */
+  const mergeToolUse = (t: ToolUseStats) => {
+    toolUse.searchToolCalls += t.searchToolCalls;
+    toolUse.searchBlockedCalls += t.searchBlockedCalls;
+    toolUse.fetchToolCalls += t.fetchToolCalls;
+    toolUse.fetchNoOpCalls += t.fetchNoOpCalls;
+    toolUse.fetchUnresolvedIds += t.fetchUnresolvedIds;
+    toolUse.structuredOutputFailures += t.structuredOutputFailures;
+    for (const scope of ["chunk_only", "with_neighbors", "whole_section"] as const) {
+      toolUse.fetchScopes[scope] += t.fetchScopes[scope];
+    }
   };
 
   // 1. スキル選択（検索要否の判定を兼ねる）
@@ -66,6 +84,9 @@ export async function runAgenticRag(question: string): Promise<RagRunResult> {
       turns: 0,
       selectedSkill: "direct",
       queryTrace: [],
+      // 検索していないのでツールは1回も使っていない。ただしスキル選択の
+      // 構造化出力失敗はここまでに計上されているので、そのまま返す
+      toolUse,
     };
   }
 
@@ -83,6 +104,7 @@ export async function runAgenticRag(question: string): Promise<RagRunResult> {
     // → docs/decisions/0010-query-decomposition.md
     const loop = await runSearchFetchLoop(question, missingHint, round === 0);
     accumulate(loop);
+    mergeToolUse(loop.toolUse);
     queryTrace.push(...loop.queryTrace);
     turns += loop.turns;
 
@@ -133,6 +155,7 @@ export async function runAgenticRag(question: string): Promise<RagRunResult> {
       verdict.missing.trim() || undefined,
     );
     accumulate(extra);
+    mergeToolUse(extra.toolUse);
     queryTrace.push(...extra.queryTrace);
     turns += extra.turns;
 
@@ -158,5 +181,6 @@ export async function runAgenticRag(question: string): Promise<RagRunResult> {
     turns,
     selectedSkill: "search",
     queryTrace,
+    toolUse,
   };
 }

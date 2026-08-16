@@ -166,11 +166,32 @@ golden set は `easy`（単発で引ける対照群）と `multihop`（複数チ
 分かれている。**easy は単発検索が天井に張り付くため、そこだけ見てもエージェント化の
 効果は測れない。** 詳細は [`comparison-experiment.md`](comparison-experiment.md)。
 
+## 第2の実験軸: 生成バックエンドの差し替え
+
+上の3パターン比較が「検索戦略とループの有無」を変数にするのに対し、
+**エージェントを駆動するLLMだけを変数にする**軸を用意している。
+
+`LLM_BACKEND=local` で、生成・エージェントのモデルをローカルの Qwen3.8-27B
+（llama.cpp / Docker）に切り替える。**埋め込み・LanceDBインデックス・LLM-as-judge は
+切り替えの影響を受けない**ため、検索側は完全に固定されたまま比較できる。
+詳細は [`decisions/0013-local-llm-backend.md`](decisions/0013-local-llm-backend.md)。
+
+### ツール使用の記録
+
+この軸で見たいのは「モデルが変わるとツールの使い方がどう変わるか」なので、
+`RagRunResult.toolUse`（`ToolUseStats`）に search/fetch の呼び方を記録している。
+
+重要なのは **`structuredOutputFailures` と `searchBlockedCalls` を数えていること**。
+スキル選択・充足チェック・確信度チェック・質問分解はいずれも判定失敗時に
+「もっともらしい既定値」へフォールバックする設計になっており（無限ループ防止のため）、
+計測が無いとツールを使えていない状態が「ループが働かなかった」という
+**誤った観測**に化ける。数値を読むときは必ずこの2つを先に見ること。
+
 ## 次のステップ候補
 
 - 実験ログの定性観察をもとに、turn 上限や description を調整して再実験する
 - `FTS_TOKENIZER=ngram` で再構築し、retrieval-recall が改善するか比較する（`0007` の宿題）
-- ロジックが固まったらローカルLLM（vLLM / llama.cpp）に差し替えて挙動の違いを比較する
+- ローカルバックエンドで `reasoning_effort` 自体を実験軸にする（`0013` は none に固定している）
 - 8失敗モードタキソノミー（別プロジェクト）に「スキル選択の誤り」を追加できないか検討する
 - **複数クエリ統合を `mergeProtectingPrimary`（主クエリ保護）から RRFベースの順位融合に
   置き換えて比較する。** `0012` で「主クエリを無条件保護」という場当たり的なルールで

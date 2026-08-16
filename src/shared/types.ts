@@ -71,6 +71,72 @@ export interface Citation {
 export type RagPattern = "naive" | "hybrid" | "agentic";
 
 /**
+ * エージェントがツールをどう使ったかの記録（パターン3のみ）。
+ *
+ * ## なぜ必要か
+ *
+ * ツール呼び出しや構造化出力に失敗しても、コード側のフォールバックが
+ * **もっともらしい正常値**に化けてしまう:
+ *
+ * - `skill-select.ts`   構造化出力が取れないと "search" に倒す → 「正しく検索を選んだ」に見える
+ * - `evidence-check.ts` / `confidence-check.ts` 判定失敗を sufficient=true に倒す
+ *                        → 「1回で足りた」＝ループ不要に見える
+ * - `query-decompose.ts` 分解失敗で空配列 → 「複合質問ではなかった」に見える
+ * - `fetch.ts`          存在しない chunk_id を黙って捨てる → 掴んだ事実自体が消える
+ *
+ * つまり計測を入れないと、モデルがツールを使えていない状態が
+ * 「ターン数中央値1、ループが働かなかった」という観測に化ける。
+ * バグを実験結果として記録しないために、失敗を明示的に数える。
+ */
+export interface ToolUseStats {
+  /** エージェント自身が search を呼んだ回数。前処理の種検索は含めない */
+  searchToolCalls: number;
+  /**
+   * search の回数上限に達して弾かれた回数。
+   * 予算の指示を守れないモデルほど増えるので、指示追従性の指標になる
+   */
+  searchBlockedCalls: number;
+  /** fetch を呼んだ回数 */
+  fetchToolCalls: number;
+  /**
+   * fetch の scope 選択の内訳。
+   * 「どこまで広げて読むかをエージェント自身に決めさせる」という
+   * search/fetch 分離の狙い（docs/decisions/0003）が機能しているかの直接指標
+   */
+  fetchScopes: Record<FetchScope, number>;
+  /** 全 chunk_id が取得済みで空返しになった fetch の回数。同じ行動の反復を捉える */
+  fetchNoOpCalls: number;
+  /**
+   * fetch を要求したのに本文が返らなかった chunk_id の数。
+   *
+   * **存在しないIDとコンテキスト予算切れの合算**である点に注意。
+   * 「ハルシネーションしたID数」と断定してはいけない
+   */
+  fetchUnresolvedIds: number;
+  /**
+   * 構造化出力が取れずフォールバックした回数（スキル選択・充足チェック・
+   * 確信度チェック・質問分解の合計）。
+   *
+   * **ここが0でない実験結果は、ターン数もスキル選択精度も「モデルの判断」ではなく
+   * 「フォールバックの結果」を測っている。** レポートには必ずその旨を書くこと
+   */
+  structuredOutputFailures: number;
+}
+
+/** ツール未使用パターン用のゼロ値。集計側で undefined を分岐しなくて済む */
+export function emptyToolUseStats(): ToolUseStats {
+  return {
+    searchToolCalls: 0,
+    searchBlockedCalls: 0,
+    fetchToolCalls: 0,
+    fetchScopes: { chunk_only: 0, with_neighbors: 0, whole_section: 0 },
+    fetchNoOpCalls: 0,
+    fetchUnresolvedIds: 0,
+    structuredOutputFailures: 0,
+  };
+}
+
+/**
  * 3パターン共通の戻り値形状（CLAUDE.md の不変条件5）。
  * 比較実験はこの形状に依存しているので、パターンごとに勝手に増やさないこと。
  */
@@ -108,4 +174,9 @@ export interface RagRunResult {
   selectedSkill?: "search" | "direct";
   /** パターン3のみ。各ターンで実際に投げたクエリ（言い換えの観察用） */
   queryTrace?: string[];
+  /**
+   * パターン3のみ。ツールの使われ方（`ToolUseStats` の説明を参照）。
+   * パターン1・2はそもそもツールを持たないので付かない
+   */
+  toolUse?: ToolUseStats;
 }

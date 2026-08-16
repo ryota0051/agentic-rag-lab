@@ -1,0 +1,85 @@
+# ローカルLLM（Qwen3.8-27B）を llama.cpp の OpenAI 互換サーバとしてホストする。
+#
+# ここに書かれた設定は**実験の再現条件そのもの**。実験レポートからこのファイルを参照するので、
+# 値を変えたら必ず experiments/ 側にも変更後の値を記録すること。
+#
+#   起動: npm run serve:local
+#   停止: npm run serve:local:down
+#   ログ: npm run serve:local:logs
+#
+# 詳細な選定理由は docs/decisions/0013-local-llm-backend.md を参照。
+
+services:
+  llama-server:
+    # **タグは固定する。** floating な :server-cuda のままだと、後日イメージが更新された時点で
+    # 過去の実験を再現できなくなる（バイナリを直接置く方式に対する Docker の利点が消える）。
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b10450
+    container_name: agentic-rag-llama
+    ports:
+      # ホスト側の Node プロセスから http://127.0.0.1:8080/v1 で叩く
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # GGUF は約18GB。コンテナを作り直すたびに再ダウンロードしないようホストに永続化する
+      - ../data/models:/models
+    environment:
+      # llama.cpp の -hf ダウンロード先。HF_HOME も揃えておく
+      LLAMA_CACHE: /models
+      HF_HOME: /models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # **リスト形式で書くこと。** 文字列形式にすると Compose が shlex で分割し、
+    # --chat-template-kwargs に渡す JSON のクォートが剥がされて不正なJSONになる。
+    command:
+      - "-hf"
+      - "unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL"
+      # ツール呼び出しに必須。モデル同梱のチャットテンプレートで tool call を解釈させる
+      - "--jinja"
+      # 思考モードの固定。思考トークンがレイテンシと出力トークンを支配すると
+      # 「ツール使用がどう変わったか」が見えなくなるため最小に倒す。
+      #
+      # **"none" は使えない。** unsloth のドキュメントは none を挙げているが、
+      # このGGUF同梱のチャットテンプレートは xhigh / medium / low しか受け付けず、
+      # none を渡すとテンプレート評価が例外を投げて全リクエストが 500 になる
+      # （`npm run verify-local-llm` が本番実行前にこれを検出した）。
+      - "--chat-template-kwargs"
+      - '{"reasoning_effort":"low"}'
+      - "-ngl"
+      - "99"
+      # 24GB に 18GB のモデルを載せた残りで KV を賄うため、量子化は必須。
+      # VRAM が溢れる場合は 16384 → 8192 の順に落とす（レポートに文脈長を明記すること）
+      - "-c"
+      - "24576"
+      - "--cache-type-k"
+      - "q8_0"
+      - "--cache-type-v"
+      - "q8_0"
+      # unsloth の Qwen3.8-27B Instruct モード推奨値
+      - "--temp"
+      - "0.7"
+      - "--top-p"
+      - "0.80"
+      - "--top-k"
+      - "20"
+      - "--presence-penalty"
+      - "1.5"
+      # 単一GPUなので並列は増やさない。KVキャッシュが分割されるだけで得がない
+      - "--parallel"
+      - "1"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8080"
+    healthcheck:
+      # モデルのロード完了を待つために使う。初回はGGUFのダウンロードぶん時間がかかるので
+      # start_period を長めに取っている
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60m
+    restart: "no"
