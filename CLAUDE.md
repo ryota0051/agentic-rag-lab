@@ -14,8 +14,13 @@
 2. **生成モデルとプロンプトは3パターン共通。** モデル文字列は `src/shared/llm-client.ts`、
    生成プロンプトは `src/shared/answer-prompt.ts` に唯一の定義を置き、全パターンがそれを import する。
    ワークフロー内にモデル名やプロンプトをベタ書きしない。
+   生成バックエンドは `LLM_BACKEND` 環境変数で切り替わるが、**定義箇所は依然 `llm-client.ts` の1箇所**。
+   回答の後処理（`<think>` 除去など）も3パターン共通の `src/shared/generate.ts` に置くこと。
 3. **埋め込みモデルと次元数は ingestion と検索で必ず同一。** ここがズレると全実験が無効になる。
    `src/shared/llm-client.ts` の `EMBEDDING_MODEL` / `EMBEDDING_DIMENSIONS` が唯一の定義。
+   **`LLM_BACKEND=local` でも埋め込みと `JUDGE_MODEL` は OpenAI のまま固定する。**
+   judge を差し替えるとものさし自体が変わり、過去の実験レポートと比較できなくなる
+   （`docs/decisions/0013-local-llm-backend.md`）。
 4. **最終的にプロンプトへ入る根拠の件数は3パターンとも k=5 に揃える。**
    パターン3も fetch 後に件数上限を掛ける。ここが揃っていないと「エージェントは根拠が多いから強い」
    という当たり前の結論しか出ない。
@@ -56,4 +61,11 @@ npm run ingest       # Qiita から記事取得 → clean → chunk → embed �
 npm run verify-fts   # 日本語BM25が効いているかのスモークテスト
 npm run eval         # 3パターン比較を実行し experiments/ にレポート出力
 npm run typecheck
+
+# ローカルLLM（Qwen3.8-27B / llama.cpp on Docker）を使う場合
+npm run serve:local        # サーバ起動（停止は serve:local:down、ログは serve:local:logs）
+npm run verify-local-llm   # 生成／ツール呼び出し／構造化出力の事前チェック（本番前に必須）
 ```
+
+`npm run eval` は `--difficulty=multihop` で難易度を絞れる（ローカルは実質直列で時間がかかるため）。
+レポート名は backend と難易度から決まる。`--slug=` で上書き可。

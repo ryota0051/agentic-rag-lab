@@ -75,6 +75,12 @@ export interface EvidenceVerdictResult {
   inputTokens: number;
   outputTokens: number;
   llmCalls: number;
+  /**
+   * 構造化出力が取れずフォールバックしたか。
+   * フォールバック先が sufficient=true なので、これを返さないと
+   * **判定できなかった実行が「1回で足りた」＝ループ不要として記録される**
+   */
+  structuredOutputFailed: boolean;
 }
 
 export async function checkEvidence(
@@ -105,5 +111,6 @@ export async function checkEvidence(
     inputTokens,
     outputTokens,
     llmCalls: result.steps?.length ?? 1,
+    structuredOutputFailed: verdict === undefined,
   };
 }

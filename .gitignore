@@ -6,6 +6,8 @@ node_modules/
 data/raw/
 data/index/
 data/language_models/
+# ローカルLLMのGGUF（約18GB）。docker/compose.yaml がここへ落とす
+data/models/
 traces/
 
 # 評価の中間生成物。レビュー後の golden-set.json 本体はコミットする

@@ -49,6 +49,12 @@ export interface SkillSelection {
   inputTokens: number;
   outputTokens: number;
   llmCalls: number;
+  /**
+   * 構造化出力が取れずフォールバックしたか。
+   * フォールバック先が "search"（＝境界ケース以外では正解）なので、
+   * これを返さないと**判定できなかった実行がスキル選択精度に正解として混ざる**
+   */
+  structuredOutputFailed: boolean;
 }
 
 export async function selectSkill(question: string): Promise<SkillSelection> {
@@ -67,5 +73,6 @@ export async function selectSkill(question: string): Promise<SkillSelection> {
     inputTokens,
     outputTokens,
     llmCalls: result.steps?.length ?? 1,
+    structuredOutputFailed: choice === undefined,
   };
 }

@@ -5,7 +5,8 @@ import { FetchCache, fetchChunks } from "../../search/fetch.js";
 import { hybridSearch } from "../../search/hybrid-search.js";
 import { readUsage } from "../../shared/generate.js";
 import { FINAL_CONTEXT_K, GENERATION_MODEL } from "../../shared/llm-client.js";
-import type { FetchResult, SearchHit } from "../../shared/types.js";
+import { emptyToolUseStats } from "../../shared/types.js";
+import type { FetchResult, SearchHit, ToolUseStats } from "../../shared/types.js";
 import { decomposeQuery } from "./query-decompose.js";
 
 /**
@@ -32,6 +33,8 @@ export interface LoopOutcome {
   inputTokens: number;
   outputTokens: number;
   llmCalls: number;
+  /** このループ中のツール使用の記録。呼び出し側が実行全体で合算する */
+  toolUse: ToolUseStats;
 }
 
 /**
@@ -50,6 +53,10 @@ function createSearchTools(collected: FetchResult[], queryTrace: string[]) {
   // 1ターン目のシード検索も1回として数えるため、カウンタは呼び出し側と共有する
   const counter = { searchCalls: 0 };
 
+  // ツールの使われ方の記録。ツール実装の内側で数えるのが要点で、
+  // LLMの応答テキストから推測すると失敗時に何も残らない
+  const toolUse = emptyToolUseStats();
+
   const searchTool = createTool({
     id: "search",
     description:
@@ -65,6 +72,8 @@ function createSearchTools(collected: FetchResult[], queryTrace: string[]) {
     }),
     execute: async ({ query }) => {
       if (counter.searchCalls >= MAX_TURNS) {
+        // 上限を超えて呼びに来た＝指示された予算を守れていない。数えておく
+        toolUse.searchBlockedCalls++;
         return {
           hits: [],
           note:
@@ -73,6 +82,7 @@ function createSearchTools(collected: FetchResult[], queryTrace: string[]) {
         };
       }
       counter.searchCalls++;
+      toolUse.searchToolCalls++;
       queryTrace.push(query);
       const hits = await hybridSearch(query, SEARCH_K);
       return {
@@ -100,12 +110,24 @@ function createSearchTools(collected: FetchResult[], queryTrace: string[]) {
         .describe("読む範囲"),
     }),
     execute: async ({ chunk_ids, scope }) => {
+      toolUse.fetchToolCalls++;
+      toolUse.fetchScopes[scope]++;
+
       // 同一ループ内での再取得を防ぐ。無駄なトークンとレイテンシを避ける
       const unseen = cache.filterUnseen(chunk_ids);
       if (unseen.length === 0) {
+        // 既に読んだものをもう一度要求している＝同じ行動の反復
+        toolUse.fetchNoOpCalls++;
         return { documents: [], note: "指定された chunk は取得済みです。" };
       }
       const docs = await fetchChunks(unseen, scope);
+
+      // 要求したのに本文が返らなかったIDを数える。fetchChunks は存在しない chunk_id を
+      // 黙って捨てるため、ここで数えないとハルシネーションIDを掴んだ事実が消える。
+      // ただしコンテキスト予算切れで落ちたぶんも混ざるので「unresolved」と呼ぶ
+      const returned = new Set(docs.map((d) => d.chunk_id));
+      toolUse.fetchUnresolvedIds += unseen.filter((id) => !returned.has(id)).length;
+
       cache.markFetched(docs.flatMap((d) => d.included_chunk_ids));
       collected.push(...docs);
 
@@ -119,7 +141,7 @@ function createSearchTools(collected: FetchResult[], queryTrace: string[]) {
     },
   });
 
-  return { searchTool, fetchTool, counter };
+  return { searchTool, fetchTool, counter, toolUse };
 }
 
 /**
@@ -210,7 +232,7 @@ export async function runSearchFetchLoop(
 ): Promise<LoopOutcome> {
   const collected: FetchResult[] = [];
   const queryTrace: string[] = [];
-  const { searchTool, fetchTool, counter } = createSearchTools(collected, queryTrace);
+  const { searchTool, fetchTool, counter, toolUse } = createSearchTools(collected, queryTrace);
 
   const agent = new Agent({
     id: "search-agent",
@@ -269,6 +291,8 @@ export async function runSearchFetchLoop(
     const d = await decomposeQuery(question);
     decomposeUsage = { inputTokens: d.inputTokens, outputTokens: d.outputTokens, llmCalls: d.llmCalls };
     subQueries = d.subQueries;
+    // 分解の構造化出力が取れないと「複合質問ではなかった」と区別がつかなくなる
+    if (d.structuredOutputFailed) toolUse.structuredOutputFailures++;
   }
 
   const seedQueries = [question, ...subQueries];
@@ -322,5 +346,6 @@ export async function runSearchFetchLoop(
     inputTokens: inputTokens + decomposeUsage.inputTokens,
     outputTokens: outputTokens + decomposeUsage.outputTokens,
     llmCalls: (result.steps?.length ?? 1) + decomposeUsage.llmCalls,
+    toolUse,
   };
 }

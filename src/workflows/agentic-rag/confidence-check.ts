@@ -61,6 +61,12 @@ export interface ConfidenceResult {
   inputTokens: number;
   outputTokens: number;
   llmCalls: number;
+  /**
+   * 構造化出力が取れずフォールバックしたか。
+   * フォールバック先が sufficient=true なので、これを返さないと
+   * **判定できなかった実行が「追加検索は不要だった」として記録される**
+   */
+  structuredOutputFailed: boolean;
 }
 
 export async function checkConfidence(
@@ -89,5 +95,6 @@ export async function checkConfidence(
     inputTokens,
     outputTokens,
     llmCalls: result.steps?.length ?? 1,
+    structuredOutputFailed: verdict === undefined,
   };
 }
