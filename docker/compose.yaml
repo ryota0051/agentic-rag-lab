@@ -1,13 +1,15 @@
-# ローカルLLM（Qwen3.8-27B）を llama.cpp の OpenAI 互換サーバとしてホストする。
+# ローカルLLM（生成 / Qwen3.8-27B）と埋め込みを llama.cpp の OpenAI 互換サーバとしてホストする。
 #
 # ここに書かれた設定は**実験の再現条件そのもの**。実験レポートからこのファイルを参照するので、
 # 値を変えたら必ず experiments/ 側にも変更後の値を記録すること。
 #
-#   起動: npm run serve:local
-#   停止: npm run serve:local:down
-#   ログ: npm run serve:local:logs
+#   生成（GPU / port 8080）: npm run serve:local      停止: serve:local:down    ログ: serve:local:logs
+#   埋め込み（CPU / port 8081）: npm run serve:embed   停止: serve:embed:down    ログ: serve:embed:logs
 #
-# 詳細な選定理由は docs/decisions/0013-local-llm-backend.md を参照。
+# **生成と埋め込みは同時に起動できる**（埋め込みは GPU を一切使わない）。
+#
+# 詳細な選定理由は docs/decisions/0013-local-llm-backend.md（生成）と
+# docs/decisions/0014-local-embedding-backend.md（埋め込み）を参照。
 
 services:
   llama-server:
@@ -82,4 +84,134 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60m
+    restart: "no"
+
+  # ===========================================================================
+  # 埋め込みサーバ（CPU）。ローカル埋め込み（EMBEDDING_BACKEND=local）で使う。
+  #
+  # ## GPU 予約を書いていないのは意図的
+  #
+  # 24GB の VRAM には既に 18GB の生成モデルが載っている。埋め込みモデルは数百MBだが、
+  # **そもそも GPU を見せない**ことで、-ngl 0 の指定漏れがあっても VRAM に触れないようにしている。
+  # 生成サーバと同時起動できることがこのサービスの要件。
+  #
+  # ## イメージが CUDA 版ではない理由
+  #
+  # 生成側の server-cuda-b10450 を -ngl 0 で流用すると、GPU 予約を外した時点で
+  # nvidia ランタイムが libcuda.so を注入せず、CUDA ビルドが起動時にバックエンドを
+  # ロードできない可能性がある。**同じビルド番号の CPU イメージ**なら同一ソースリビジョン
+  # という再現性は保ったまま、この不確実性を消せる。
+  #
+  # ## モデルごとにサービスを分けている理由
+  #
+  # pooling / prefix / 次元がモデルごとに違う。1サービスを ${VAR} 展開で使い回すと、
+  # このファイルから「そのとき何で回したか」が読めなくなる（＝実験条件の記録でなくなる）。
+  # フラグは全て literal に書く。
+  #
+  # profiles を付けているのは、ruri と bge が同じ 8081 を取り合わないようにするため。
+  #
+  # **npm scripts が up / rm でサービス名を明示しているのは意図的。**
+  # `--profile ruri up -d` だけだと、プロファイルを持たない llama-server（生成・18GB）まで
+  # 一緒に起動してしまう（プロファイル無しのサービスは常に対象に入る）。
+  # 逆にプロファイル指定なしの `docker compose down` はプロジェクト全体を落とすので、
+  # 生成側を止めるつもりで埋め込み側まで消える。どちらの事故も名前を明示すれば起きない。
+  # 停止は `npm run serve:embed:down` / `npm run serve:local:down` を使うこと。
+  # ===========================================================================
+  llama-embed-ruri:
+    profiles: ["ruri"]
+    image: ghcr.io/ggml-org/llama.cpp:server-b10450
+    # bge 側と同名。profiles で排他起動するため衝突せず、
+    # `docker logs agentic-rag-embed` が常に「今動いている埋め込みサーバ」を指す。
+    # 両プロファイルを同時に上げようとすると名前とポートの両方で失敗する（＝事故が静かに進行しない）
+    container_name: agentic-rag-embed
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - ../data/models:/models
+    environment:
+      LLAMA_CACHE: /models
+      HF_HOME: /models
+    command:
+      # 日本語特化・JMTEB 77.2（日本語SOTA）。実測 P@1 は text-embedding-3-large とほぼ同等。
+      #
+      # **この GGUF は「ModernBERT + SentencePiece 対応のパッチ版 llama.cpp で変換」と
+      # 明記されている。** ピン留めした b10450 でロードできるかは未検証で、駄目な場合は
+      # サーバが起動時に即死する（`unknown model architecture` 等）。
+      # そのときは llama-embed-bge に切り替える（npm run serve:embed:bge）。
+      - "-hf"
+      - "Targoyle/ruri-v3-310m-GGUF:q8_0"
+      # /v1/embeddings を有効にする。付け忘れると 501 が返る
+      - "--embeddings"
+      # ruri v3 は mean pooling。**間違えてもエラーにならず精度だけ落ちる**ので、
+      # src/shared/llm-client.ts のプロファイル表の pooling と必ず一致させること
+      - "--pooling"
+      - "mean"
+      # CPU 実行。生成サーバの VRAM を圧迫しない
+      - "-ngl"
+      - "0"
+      # 埋め込みは非causal なので、**1系列が丸ごと physical batch (-ub) に載る必要がある**。
+      # -c = -b = -ub に揃えるのが事故の少ない設定。
+      # 「input is too large to process」が出たら、まず llm-client.ts の batchSize を下げる
+      - "-c"
+      - "8192"
+      - "-b"
+      - "8192"
+      - "-ub"
+      - "8192"
+      - "--parallel"
+      - "1"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8081"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # 生成モデル（18GB）と違い 337MB なので短くてよい
+      start_period: 15m
+    restart: "no"
+
+  # ruri がロードできない場合のフォールバック。多言語・1024次元・cls pooling・prefix 不要。
+  # XLM-RoBERTa 系なので本家 llama.cpp が確実に対応している。
+  llama-embed-bge:
+    profiles: ["bge"]
+    image: ghcr.io/ggml-org/llama.cpp:server-b10450
+    container_name: agentic-rag-embed
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - ../data/models:/models
+    environment:
+      LLAMA_CACHE: /models
+      HF_HOME: /models
+    command:
+      # 埋め込みは Q4 まで落とさない（数百MBの節約のために精度を捨てる意味がない）
+      - "-hf"
+      - "gpustack/bge-m3-GGUF:Q8_0"
+      - "--embeddings"
+      # bge-m3 は CLS pooling。ruri の mean と取り違えないこと
+      - "--pooling"
+      - "cls"
+      - "-ngl"
+      - "0"
+      - "-c"
+      - "8192"
+      - "-b"
+      - "8192"
+      - "-ub"
+      - "8192"
+      - "--parallel"
+      - "1"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8081"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15m
     restart: "no"

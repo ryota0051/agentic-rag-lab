@@ -17,10 +17,23 @@
    生成バックエンドは `LLM_BACKEND` 環境変数で切り替わるが、**定義箇所は依然 `llm-client.ts` の1箇所**。
    回答の後処理（`<think>` 除去など）も3パターン共通の `src/shared/generate.ts` に置くこと。
 3. **埋め込みモデルと次元数は ingestion と検索で必ず同一。** ここがズレると全実験が無効になる。
-   `src/shared/llm-client.ts` の `EMBEDDING_MODEL` / `EMBEDDING_DIMENSIONS` が唯一の定義。
-   **`LLM_BACKEND=local` でも埋め込みと `JUDGE_MODEL` は OpenAI のまま固定する。**
-   judge を差し替えるとものさし自体が変わり、過去の実験レポートと比較できなくなる
-   （`docs/decisions/0013-local-llm-backend.md`）。
+   `src/shared/llm-client.ts` の**埋め込みプロファイル表**（`EMBEDDING_PROFILES`）が唯一の定義で、
+   モデル名・次元・prefix・pooling・バッチサイズはすべてそこから導出される。
+   `EMBEDDING_MODEL` / `EMBEDDING_DIMENSIONS` は派生値であり、直接書き換えない。
+
+   埋め込みは `EMBEDDING_BACKEND`（`openai` 既定 / `local`）で切り替えられる。
+   **これは `LLM_BACKEND` とは独立の軸**で、両方を同時に動かさないこと（実験軸は1本ずつ）。
+
+   **インデックスは埋め込みプロファイルごとに `data/index-<slug>/` に分かれる。**
+   3072次元と768次元なら LanceDB が次元不一致で落ちるが、**次元が同じで中身が違う
+   ベクトル空間は検索が成功してしまい、壊れていることに気づけない。** 各インデックスには
+   `index-meta.json`（指紋）を置き、`openChunksTable()` が現在の設定と突き合わせて
+   不一致なら throw する。**この検証を無効化しないこと。**
+
+   **`JUDGE_MODEL` は何があっても OpenAI 固定。** golden set はこのモデルで生成されており、
+   判定側を差し替えるとものさし自体が変わって過去の実験レポートと比較できなくなる
+   （`docs/decisions/0013-local-llm-backend.md` / `0014-local-embedding-backend.md`）。
+   したがって `LLM_BACKEND=local` かつ `EMBEDDING_BACKEND=local` でも `OPENAI_API_KEY` は必要。
 4. **最終的にプロンプトへ入る根拠の件数は3パターンとも k=5 に揃える。**
    パターン3も fetch 後に件数上限を掛ける。ここが揃っていないと「エージェントは根拠が多いから強い」
    という当たり前の結論しか出ない。
@@ -41,7 +54,7 @@
 | エージェント/ワークフロー | Mastra (`@mastra/core`) |
 | 評価 | Mastra Scorers (`@mastra/core/evals` + `@mastra/evals`) |
 | LLM（生成・エージェント・judge） | OpenAI `gpt-5.6-luna`（Mastra model router 経由） |
-| 埋め込み | OpenAI `text-embedding-3-large` |
+| 埋め込み | OpenAI `text-embedding-3-large`（既定） / ローカルは `ruri-v3-310m`・`bge-m3` |
 | ベクトルDB / 全文検索 | LanceDB (`@lancedb/lancedb`) を直接利用 |
 | データ取り込み | Qiita API v2 |
 
@@ -65,7 +78,17 @@ npm run typecheck
 # ローカルLLM（Qwen3.8-27B / llama.cpp on Docker）を使う場合
 npm run serve:local        # サーバ起動（停止は serve:local:down、ログは serve:local:logs）
 npm run verify-local-llm   # 生成／ツール呼び出し／構造化出力の事前チェック（本番前に必須）
+
+# ローカル埋め込み（ruri-v3-310m / llama.cpp CPU・port 8081）を使う場合
+npm run serve:embed        # 起動（停止は serve:embed:down、ログは serve:embed:logs）
+npm run verify-embedding   # 次元・正規化・等方性・prefix・順序保証の事前チェック
+npm run build-index        # ← 埋め込みを変えたら必ず作り直す（別ディレクトリに作られる）
 ```
+
+`serve:embed` と `serve:local` は**同時に起動できる**（埋め込みは GPU を使わない）。
+npm scripts はサービス名を明示している。素の `docker compose --profile ruri up -d` だと
+プロファイルを持たない生成サーバ（18GB）まで起動し、素の `docker compose down` は
+プロジェクト全体を落とすので、必ず scripts を使うこと。
 
 `npm run eval` は `--difficulty=multihop` で難易度を絞れる（ローカルは実質直列で時間がかかるため）。
 レポート名は backend と難易度から決まる。`--slug=` で上書き可。
