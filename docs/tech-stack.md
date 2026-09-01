@@ -6,7 +6,8 @@
 | 評価 | **Mastra Scorers**（`@mastra/core/evals` + `@mastra/evals`） | `createScorer` / `runEvals`。TypeScript 単独で評価まで完結し、Python プロセスを別立てしなくて済む |
 | LLM（生成・エージェント・judge） | **OpenAI `gpt-5.6-luna`** | Mastra model router 経由（`"openai/gpt-5.6-luna"`）。5.6系の最速・最安ティアで、試行回数を稼ぐ実験用途に合う。入力 $0.20 / 出力 $1.20 per 1M |
 | LLM（ローカルバックエンド） | **Qwen3.8-27B**（unsloth GGUF, UD-Q4_K_XL） | `LLM_BACKEND=local` のときの生成・エージェント用。llama.cpp 公式Dockerイメージで OpenAI 互換サーバとしてホストする。`decisions/0013-local-llm-backend.md` |
-| 埋め込み | **OpenAI `text-embedding-3-large`** | 3072次元。LLM と同じ `OPENAI_API_KEY` で済み、必要なキーが1つになる |
+| 埋め込み | **OpenAI `text-embedding-3-large`** | 既定。3072次元。LLM と同じ `OPENAI_API_KEY` で済み、必要なキーが1つになる |
+| 埋め込み（ローカルバックエンド） | **`ruri-v3-310m`**（cl-nagoya / GGUF Q8_0） | `EMBEDDING_BACKEND=local` のとき。日本語特化・768次元・JMTEB 77.2（日本語SOTA）。337MB で llama.cpp の CPU 実行が現実的。フォールバックに `bge-m3`。`decisions/0014-local-embedding-backend.md` |
 | ベクトルDB／全文検索 | **LanceDB**（`@lancedb/lancedb`） | 埋め込み型でサーバー不要。全文検索（Tantivy = BM25相当）も標準搭載しており、ベクトル＋BM25 のハイブリッドを1本で完結できる |
 | データ取り込み | **Qiita API v2** | Markdown 本文とメタデータを直接取得でき、HTML由来のノイズをそもそも回避できる。`decisions/0004-cleaning-at-ingestion.md` |
 | ストレージ（トレース） | `@mastra/libsql` | ローカルファイル。実行ログを `traces/` に永続化 |
@@ -19,9 +20,14 @@
 // 3パターン共通。LLM_BACKEND=local ならローカルサーバの設定オブジェクトになる
 export const GENERATION_MODEL: MastraModelConfig = /* openai/gpt-5.6-luna | { id, url, apiKey } */;
 export const GENERATION_MODEL_LABEL = /* 表示用の文字列 */;
-export const JUDGE_MODEL      = "openai/gpt-5.6-luna";
-export const EMBEDDING_MODEL  = "text-embedding-3-large";
-export const EMBEDDING_DIMENSIONS = 3072;
+export const JUDGE_MODEL      = "openai/gpt-5.6-luna";  // バックエンドに関わらず固定
+
+// 埋め込みはプロファイル表が唯一の定義。モデル名・次元・prefix・pooling・batchSize を束ねる
+const EMBEDDING_PROFILES = { "text-embedding-3-large": {...}, "ruri-v3-310m": {...}, "bge-m3": {...} };
+export const EMBEDDING_PROFILE    = /* EMBEDDING_BACKEND と LOCAL_EMBEDDING_MODEL から解決 */;
+export const EMBEDDING_MODEL      = EMBEDDING_PROFILE.model;       // 派生値
+export const EMBEDDING_DIMENSIONS = EMBEDDING_PROFILE.dimensions;  // 派生値
+export const EMBEDDING_SLUG       = EMBEDDING_PROFILE.slug;        // インデックスのディレクトリ名になる
 export const FINAL_CONTEXT_K = 5;
 ```
 
@@ -37,13 +43,13 @@ export const FINAL_CONTEXT_K = 5;
 
 | | `openai`（既定） | `local` |
 |---|---|---|
-| 生成・エージェント | `gpt-5.6-luna` | Qwen3.8-27B（llama.cpp / Docker） |
-| 埋め込み | `text-embedding-3-large` | **同じ（変更しない）** |
+| 生成・エージェント | `gpt-5.6-luna` | Qwen3.8-27B（llama.cpp / Docker / GPU / port 8080） |
+| 埋め込み | **影響を受けない**（`EMBEDDING_BACKEND` が決める） | **同左** |
 | LLM-as-judge | `gpt-5.6-luna` | **同じ（変更しない）** |
-| LanceDBインデックス | 共有 | **同じものを共有** |
+| LanceDBインデックス | **影響を受けない** | **同左** |
 
 検索側を完全に固定することで、変数がエージェントを駆動するLLM1つだけになる。
-**`LLM_BACKEND=local` でも `OPENAI_API_KEY` は必要**（埋め込みと judge が使う）。
+**`LLM_BACKEND=local` でも `OPENAI_API_KEY` は必要**（judge が使う）。
 
 ```bash
 npm run serve:local        # llama.cpp サーバを起動（docker/compose.yaml）
@@ -52,6 +58,28 @@ npm run verify-local-llm   # 生成／ツール呼び出し／構造化出力を
 
 judge をローカルに倒してはいけない理由と、ランタイムの選定理由は
 `decisions/0013-local-llm-backend.md` を参照。
+
+## 埋め込みバックエンドの切り替え
+
+`EMBEDDING_BACKEND` は **`LLM_BACKEND` とは独立の軸**。両方を同時に動かすと
+どちらの寄与か分離できなくなるので、必ず1本ずつ動かす。
+
+| | `openai`（既定） | `local` |
+|---|---|---|
+| 埋め込み | `text-embedding-3-large`（3072d） | `ruri-v3-310m`（768d）/ `bge-m3`（1024d） |
+| 実行場所 | クラウドAPI | llama.cpp **CPU**（GPU非占有 / port 8081） |
+| LanceDBインデックス | `data/index-openai-3large/` | `data/index-ruri-v3-310m/` 等 |
+| LLM-as-judge | **OpenAI 固定** | **OpenAI 固定** |
+
+インデックスを分けたうえで `index-meta.json`（指紋）を照合するのは、
+**次元が同じで意味が違うベクトル空間は検索が成功してしまい、壊れていることに
+気づけない**ため。詳細は `decisions/0014-local-embedding-backend.md`。
+
+```bash
+npm run serve:embed        # 埋め込みサーバを起動（生成サーバと同時起動できる）
+npm run verify-embedding   # 次元・正規化・等方性・prefix・順序保証を確認（build-index の前に必須）
+npm run build-index        # 埋め込みを変えたら必ず作り直す
+```
 
 ## LLM-as-judge に同じモデルを使うことについて
 
@@ -73,6 +101,9 @@ faithfulness / answer-relevancy の**絶対値は甘めに出る**可能性が�
 | Cross-Encoder リランカー（Voyage 等） | 比較実験の変数が増える。`decisions/0005-no-cross-encoder-rerank.md` |
 | deepeval / MLflow | Python プロセスの別立てが必要になる。Mastra Scorers で足りる |
 | grep 系ツール | BM25 と役割が重複し、エージェントのツール選択の余地を無駄に広げる。`decisions/0006-grep-prototyping-only.md` |
+| GPU 常駐の埋め込みサーバ | 24GB に 18GB の生成モデルが載っている。数百MBでも VRAM 競合の可能性を作ると `0013` の前提（生成の再現条件を固定する）が崩れる。CPU で 5.1 件/s 出るので困らない |
+| compose の `${VAR}` 展開で pooling を切り替える案 | このファイルが「そのとき何で回したか」の記録でなくなる。モデルごとにサービスを分け、全フラグを literal に書く |
+| `Qwen3-Embedding-0.6B` | 多言語 MTEB では強いが、**日本語 Retrieval で ruri-v3-310m に約9pt 劣る**。`decisions/0014-local-embedding-backend.md` |
 
 ## 日本語で必ず踏む地雷
 

@@ -7,10 +7,16 @@ import { runNaiveRag } from "../src/workflows/naive-rag.js";
 import { isMain } from "../src/shared/is-main.js";
 import { withRetry } from "../src/shared/retry.js";
 import {
+  EMBEDDING_BACKEND,
+  EMBEDDING_DIMENSIONS,
+  EMBEDDING_MODEL_LABEL,
+  EMBEDDING_SLUG,
   FINAL_CONTEXT_K,
   GENERATION_MODEL_LABEL,
+  JUDGE_MODEL,
   LLM_BACKEND,
 } from "../src/shared/llm-client.js";
+import { DB_DIR, readIndexMeta, type IndexMeta } from "../src/index/build-index.js";
 import type { FetchScope, RagPattern, RagRunResult } from "../src/shared/types.js";
 import type { Difficulty, GoldenItem } from "./generate-golden-set.js";
 import { selectSkill } from "../src/workflows/agentic-rag/skill-select.js";
@@ -281,6 +287,14 @@ function toolUseSection(records: RunRecord[]): string {
   );
 }
 
+/**
+ * 実行に使ったインデックスの指紋。`main()` が実行前に読み込む。
+ *
+ * レポートに「どのベクトル空間で測った数値か」を必ず残すために持つ。
+ * 埋め込みを差し替えられるようになった以上、これが無いと後から数値の意味が復元できない。
+ */
+let indexMeta: IndexMeta | undefined;
+
 function buildReport(
   records: RunRecord[],
   skillScore: ReturnType<typeof scoreSkillSelection>,
@@ -329,11 +343,23 @@ function buildReport(
       ? "（サーバ設定は `docker/compose.yaml` を参照。文脈長・量子化・reasoning_effort はそこに固定されている）"
       : ""
   }
-- 埋め込み・LanceDBインデックス: **無変更**（検索側は固定。変数は生成・エージェントのLLMのみ）
+- 埋め込み: \`${EMBEDDING_MODEL_LABEL}\` / ${EMBEDDING_DIMENSIONS}次元（バックエンド: \`${EMBEDDING_BACKEND}\`）
+- LanceDBインデックス: \`${path.basename(DB_DIR)}\`（構築: ${indexMeta?.builtAt ?? "不明"} / ${
+    indexMeta?.chunks ?? "?"
+  } チャンク / FTS: \`${indexMeta?.ftsTokenizer ?? "?"}\`）
+- LLM-as-judge: \`${JUDGE_MODEL}\`（**バックエンドに関わらず固定**。ものさしを動かすと過去のレポートと比較できなくなる）
 - golden set: ${items.length} 問（easy ${easyN} / multihop ${mhN}）
 - 最終コンテキスト件数: k=${FINAL_CONTEXT_K}（3パターン共通の上限）
 - 同時実行数: ${CONCURRENCY}
 - 総実行時間: ${(elapsedMs / 1000 / 60).toFixed(1)} 分
+${
+  EMBEDDING_BACKEND === "local"
+    ? "\n> ⚠️ **埋め込みが既定（text-embedding-3-large）と異なります。**\n" +
+      "> retrieval-recall / faithfulness / answer-relevancy を、埋め込みが違う過去のレポートと\n" +
+      "> 直接比較しないでください。比較する場合は golden set と生成バックエンドを揃え、\n" +
+      "> **埋め込みだけを変えた2本**を並べること。\n"
+    : ""
+}
 
 ## easy（単発検索で引ける想定・対照群）
 
@@ -464,7 +490,35 @@ function parseArgs() {
  */
 function defaultSlug(difficulty?: Difficulty): string {
   const backend = LLM_BACKEND === "local" ? "local" : "cloud";
-  return [backend, difficulty ?? "full", "naive-vs-hybrid-vs-agentic"].join("-");
+  // 既定の埋め込みではスラグに何も足さない。**過去のレポートとファイル名が完全に一致し、
+  // 既存の比較系列がそのまま読める。** 埋め込みを変えたときだけ slug が伸びる
+  const emb = EMBEDDING_BACKEND === "openai" ? [] : [`emb-${EMBEDDING_SLUG}`];
+  return [backend, ...emb, difficulty ?? "full", "naive-vs-hybrid-vs-agentic"].join("-");
+}
+
+/** 生ログに残す実行条件。`--baseline` で異なる条件のログを混ぜていないか検査するために使う */
+interface RunMeta {
+  generationLabel: string;
+  llmBackend: string;
+  embeddingBackend: string;
+  embeddingSlug: string;
+  embeddingDimensions: number;
+  indexDir: string;
+  ftsTokenizer?: string;
+  judgeModel: string;
+}
+
+function currentRunMeta(): RunMeta {
+  return {
+    generationLabel: GENERATION_MODEL_LABEL,
+    llmBackend: LLM_BACKEND,
+    embeddingBackend: EMBEDDING_BACKEND,
+    embeddingSlug: EMBEDDING_SLUG,
+    embeddingDimensions: EMBEDDING_DIMENSIONS,
+    indexDir: path.basename(DB_DIR),
+    ftsTokenizer: indexMeta?.ftsTokenizer,
+    judgeModel: JUDGE_MODEL,
+  };
 }
 
 /** 走らせないパターンの結果を過去の実行から読み込む */
@@ -475,7 +529,34 @@ async function loadBaselineRecords(
   const raw = JSON.parse(await readFile(path.resolve(baselinePath), "utf8")) as {
     records: RunRecord[];
     skillResults?: { case: BoundaryCase; selected: Skill }[];
+    meta?: RunMeta;
   };
+
+  // 埋め込みが違うログを混ぜると、1つのレポートに**異なるベクトル空間の数値が同居する**。
+  // 検索側が固定だった頃は起こり得なかった事故なので、埋め込み軸が増えた以上ここで検査する。
+  const now = currentRunMeta();
+  if (!raw.meta) {
+    console.warn(
+      `⚠️  ${baselinePath} には実行条件（meta）が記録されていません（埋め込み軸の導入前のログ）。\n` +
+        "    既定の埋め込み（text-embedding-3-large）で取られたものとみなして続行します。",
+    );
+    if (now.embeddingBackend !== "openai") {
+      console.warn(
+        "    **現在の実行は埋め込みが既定ではありません。** 合成した数値は比較に使えません。",
+      );
+    }
+  } else if (
+    raw.meta.embeddingSlug !== now.embeddingSlug ||
+    raw.meta.indexDir !== now.indexDir
+  ) {
+    console.warn(
+      `⚠️  ${baselinePath} は別の埋め込みで取られたログです。\n` +
+        `    baseline: ${raw.meta.embeddingSlug} (${raw.meta.indexDir})\n` +
+        `    現在:     ${now.embeddingSlug} (${now.indexDir})\n` +
+        "    合成すると1つのレポートに異なるベクトル空間の数値が同居します。",
+    );
+  }
+
   return {
     records: raw.records.filter((r) => patterns.includes(r.result.pattern)),
     skill: raw.skillResults,
@@ -501,7 +582,7 @@ async function writeReport(
   // raw-latest.json は「直近の実行」を指す固定名だが、それだけだと同じ日に
   // クラウド版とローカル版を回したときに互いを上書きしてしまうので、
   // スラグ付きのコピーも書いて --baseline から名指しできるようにする
-  const raw = JSON.stringify({ records, skillResults, failures }, null, 2);
+  const raw = JSON.stringify({ meta: currentRunMeta(), records, skillResults, failures }, null, 2);
   const rawPath = path.join(
     EXPERIMENTS_DIR,
     `raw-${new Date().toISOString().slice(0, 10)}-${slug}.json`,
@@ -525,6 +606,16 @@ async function writeReport(
 async function main() {
   const started = Date.now();
   const args = parseArgs();
+
+  // 実行条件をレポートと生ログに残すために先に読む。
+  // 埋め込みが設定と食い違っていれば openChunksTable が最初の検索で throw するので、
+  // ここで無ければ警告に留める（build-index 前でもレポート生成の経路は通したい）
+  indexMeta = await readIndexMeta();
+  if (!indexMeta) {
+    console.warn(
+      `⚠️  ${DB_DIR} にインデックスのメタがありません。先に \`npm run build-index\` を実行してください。`,
+    );
+  }
 
   const allItems = JSON.parse(await readFile(GOLDEN_PATH, "utf8")) as GoldenItem[];
   const items = args.difficulty

@@ -4,7 +4,8 @@ node_modules/
 
 # 取得データと生成物（再生成可能なのでコミットしない）
 data/raw/
-data/index/
+# 埋め込みプロファイルごとに data/index-<slug>/ ができる
+data/index*/
 data/language_models/
 # ローカルLLMのGGUF（約18GB）。docker/compose.yaml がここへ落とす
 data/models/

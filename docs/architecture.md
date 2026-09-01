@@ -141,6 +141,9 @@ embedding と BM25 のインデックスがノイズ入りテキストに対し�
 Qiita API → clean → chunk（見出し境界） → embed → LanceDB
 ```
 
+投入先は `data/index-<埋め込みプロファイルslug>/` で、同じディレクトリに
+`index-meta.json`（どの埋め込みで作られたかの指紋）が置かれる。詳細は「第3の実験軸」。
+
 チャンクは見出しで切り、`heading_path`（例: `記事タイトル > セットアップ > Docker`）を
 メタデータとして持たせる。これが (a) スニペットの文脈補強、(b) fetch の範囲拡張の
 両方で使われる。
@@ -172,8 +175,9 @@ golden set は `easy`（単発で引ける対照群）と `multihop`（複数チ
 **エージェントを駆動するLLMだけを変数にする**軸を用意している。
 
 `LLM_BACKEND=local` で、生成・エージェントのモデルをローカルの Qwen3.8-27B
-（llama.cpp / Docker）に切り替える。**埋め込み・LanceDBインデックス・LLM-as-judge は
-切り替えの影響を受けない**ため、検索側は完全に固定されたまま比較できる。
+（llama.cpp / Docker）に切り替える。**`LLM_BACKEND` は埋め込みに影響しない**
+（埋め込みは独立の `EMBEDDING_BACKEND` 軸。下記「第3の実験軸」）ため、
+この軸を動かす限り検索側は完全に固定されたまま比較できる。LLM-as-judge も固定。
 詳細は [`decisions/0013-local-llm-backend.md`](decisions/0013-local-llm-backend.md)。
 
 ### ツール使用の記録
@@ -186,6 +190,29 @@ golden set は `easy`（単発で引ける対照群）と `multihop`（複数チ
 「もっともらしい既定値」へフォールバックする設計になっており（無限ループ防止のため）、
 計測が無いとツールを使えていない状態が「ループが働かなかった」という
 **誤った観測**に化ける。数値を読むときは必ずこの2つを先に見ること。
+
+## 第3の実験軸: 埋め込みバックエンドの差し替え
+
+3パターン比較が「検索戦略とループの有無」を、第2の軸が「エージェントを駆動するLLM」を
+変数にするのに対し、ここでは **retrieval そのものの質**を変数にする。
+
+`EMBEDDING_BACKEND=local` で埋め込みをローカルの `ruri-v3-310m`（日本語特化・768次元・
+llama.cpp CPU）に切り替える。`LLM_BACKEND` とは**独立の軸**で、両方を同時に動かすと
+どちらの寄与か分離できなくなる。LLM-as-judge はこの軸でも固定。
+詳細は [`decisions/0014-local-embedding-backend.md`](decisions/0014-local-embedding-backend.md)。
+
+**この軸の主計測器は `npm run probe:retrieval`。** 生成を挟まないので数十秒で回り、
+埋め込みの差が recall にどう出るかだけを直接見られる。実測では純ベクトル検索は
+クラウドAPIがわずかに上回り、パターン2・3が使うハイブリッド検索では ruri が上回った。
+
+### インデックスは埋め込みごとに分かれる
+
+`data/index-<プロファイルslug>/`（`index-openai-3large` / `index-ruri-v3-310m`）。
+**次元が同じで意味が違うベクトル空間は検索が成功してしまい、壊れていることに気づけない**ため、
+物理的に分けたうえで `index-meta.json`（指紋）を `openChunksTable()` が毎起動で照合する。
+
+チャンク分割は `data/raw` からのみ決まるので `chunk_id` は埋め込みをまたいで不変。
+**golden set はそのまま使い回せる。** BM25 も埋め込みに依存しない。
 
 ## 次のステップ候補
 

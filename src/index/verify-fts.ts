@@ -2,7 +2,7 @@ import "dotenv/config";
 import * as lancedb from "@lancedb/lancedb";
 import type { BaseTokenizer } from "@lancedb/lancedb";
 import { isMain } from "../shared/is-main.js";
-import { DB_DIR, FTS_TOKENIZER, TABLE_NAME } from "./build-index.js";
+import { FTS_TOKENIZER, openChunksTable } from "./build-index.js";
 
 /**
  * 日本語BM25が実際に効いているかのスモークテスト。**Phase 2 に進む前の必須ゲート。**
@@ -121,8 +121,7 @@ async function runProbes(table: lancedb.Table, rows: Row[]): Promise<VerifyResul
 export async function compareTokenizers(
   tokenizers: BaseTokenizer[] = ["simple", "icu", "ngram"],
 ): Promise<VerifyResult[]> {
-  const db = await lancedb.connect(DB_DIR);
-  const table = await db.openTable(TABLE_NAME);
+  const table = await openChunksTable();
   const rows = (await table.query().select(["chunk_id", "text"]).toArray()) as Row[];
 
   const results: VerifyResult[] = [];
@@ -176,8 +175,7 @@ if (isMain(import.meta.url)) {
       return;
     }
 
-    const db = await lancedb.connect(DB_DIR);
-    const table = await db.openTable(TABLE_NAME);
+    const table = await openChunksTable();
     const rows = (await table.query().select(["chunk_id", "text"]).toArray()) as Row[];
     const result = await runProbes(table, rows);
 
