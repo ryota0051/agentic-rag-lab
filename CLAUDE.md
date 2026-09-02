@@ -30,10 +30,15 @@
    `index-meta.json`（指紋）を置き、`openChunksTable()` が現在の設定と突き合わせて
    不一致なら throw する。**この検証を無効化しないこと。**
 
-   **`JUDGE_MODEL` は何があっても OpenAI 固定。** golden set はこのモデルで生成されており、
-   判定側を差し替えるとものさし自体が変わって過去の実験レポートと比較できなくなる
+   **`JUDGE_MODEL` は何があっても OpenAI 固定。** ただし名前に反して**採点には使われていない**。
+   実際に呼ぶのは `gen:golden` / `gen:multihop`（問題作成）だけで、`npm run eval` の採点は
+   `evals/scorers/` の2つ（chunk_id の集合比較とラベル一致）——**どちらも LLM を使わない**。
+   固定すべき理由は「採点に使うから」ではなく「**問題を作ったモデルだから**」で、
+   作り直すとものさし自体が変わって過去の実験レポートと比較できなくなる
    （`docs/decisions/0013-local-llm-backend.md` / `0014-local-embedding-backend.md`）。
-   したがって `LLM_BACKEND=local` かつ `EMBEDDING_BACKEND=local` でも `OPENAI_API_KEY` は必要。
+
+   したがって `OPENAI_API_KEY` が要るのは `LLM_BACKEND=openai` か `EMBEDDING_BACKEND=openai`
+   のとき、および `gen:golden` / `gen:multihop` を回すとき。**両方 local なら比較実験もキー無しで回る。**
 4. **最終的にプロンプトへ入る根拠の件数は3パターンとも k=5 に揃える。**
    パターン3も fetch 後に件数上限を掛ける。ここが揃っていないと「エージェントは根拠が多いから強い」
    という当たり前の結論しか出ない。
@@ -52,8 +57,8 @@
 | レイヤー | 選定 |
 |---|---|
 | エージェント/ワークフロー | Mastra (`@mastra/core`) |
-| 評価 | Mastra Scorers (`@mastra/core/evals` + `@mastra/evals`) |
-| LLM（生成・エージェント・judge） | OpenAI `gpt-5.6-luna`（Mastra model router 経由） |
+| 評価 | 自前の決定的スコアラー（`evals/scorers/`）。LLM-as-judge は使っていない |
+| LLM（生成・エージェント・golden set 生成） | OpenAI `gpt-5.6-luna`（Mastra model router 経由） |
 | 埋め込み | OpenAI `text-embedding-3-large`（既定） / ローカルは `ruri-v3-310m`・`bge-m3` |
 | ベクトルDB / 全文検索 | LanceDB (`@lancedb/lancedb`) を直接利用 |
 | データ取り込み | Qiita API v2 |

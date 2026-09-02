@@ -3,8 +3,8 @@
 | レイヤー | 選定 | 理由 |
 |---|---|---|
 | エージェント／ワークフロー | **Mastra**（`@mastra/core`） | スキル選択と search/fetch ループをワークフローとして表現でき、トレースが自動で残る。`decisions/0002-mastra-typescript.md` |
-| 評価 | **Mastra Scorers**（`@mastra/core/evals` + `@mastra/evals`） | `createScorer` / `runEvals`。TypeScript 単独で評価まで完結し、Python プロセスを別立てしなくて済む |
-| LLM（生成・エージェント・judge） | **OpenAI `gpt-5.6-luna`** | Mastra model router 経由（`"openai/gpt-5.6-luna"`）。5.6系の最速・最安ティアで、試行回数を稼ぐ実験用途に合う。入力 $0.20 / 出力 $1.20 per 1M |
+| 評価 | **自前の決定的スコアラー**（`evals/scorers/`） | retrieval-recall（chunk_id の集合比較）と skill-selection-accuracy（ラベル一致）。**LLM を使わないので実行ごとにブレず、安価**。LLM-as-judge 指標は採用していない（下記） |
+| LLM（生成・エージェント・golden set 生成） | **OpenAI `gpt-5.6-luna`** | Mastra model router 経由（`"openai/gpt-5.6-luna"`）。5.6系の最速・最安ティアで、試行回数を稼ぐ実験用途に合う。入力 $0.20 / 出力 $1.20 per 1M |
 | LLM（ローカルバックエンド） | **Qwen3.8-27B**（unsloth GGUF, UD-Q4_K_XL） | `LLM_BACKEND=local` のときの生成・エージェント用。llama.cpp 公式Dockerイメージで OpenAI 互換サーバとしてホストする。`decisions/0013-local-llm-backend.md` |
 | 埋め込み | **OpenAI `text-embedding-3-large`** | 既定。3072次元。LLM と同じ `OPENAI_API_KEY` で済み、必要なキーが1つになる |
 | 埋め込み（ローカルバックエンド） | **`ruri-v3-310m`**（cl-nagoya / GGUF Q8_0） | `EMBEDDING_BACKEND=local` のとき。日本語特化・768次元・JMTEB 77.2（日本語SOTA）。337MB で llama.cpp の CPU 実行が現実的。フォールバックに `bge-m3`。`decisions/0014-local-embedding-backend.md` |
@@ -20,6 +20,7 @@
 // 3パターン共通。LLM_BACKEND=local ならローカルサーバの設定オブジェクトになる
 export const GENERATION_MODEL: MastraModelConfig = /* openai/gpt-5.6-luna | { id, url, apiKey } */;
 export const GENERATION_MODEL_LABEL = /* 表示用の文字列 */;
+// golden set を作るモデル。**採点には使われない**（下記「LLM-as-judge を使っていない」）
 export const JUDGE_MODEL      = "openai/gpt-5.6-luna";  // バックエンドに関わらず固定
 
 // 埋め込みはプロファイル表が唯一の定義。モデル名・次元・prefix・pooling・batchSize を束ねる
@@ -45,18 +46,19 @@ export const FINAL_CONTEXT_K = 5;
 |---|---|---|
 | 生成・エージェント | `gpt-5.6-luna` | Qwen3.8-27B（llama.cpp / Docker / GPU / port 8080） |
 | 埋め込み | **影響を受けない**（`EMBEDDING_BACKEND` が決める） | **同左** |
-| LLM-as-judge | `gpt-5.6-luna` | **同じ（変更しない）** |
+| golden set 生成モデル | `gpt-5.6-luna` | **同じ（変更しない）** |
 | LanceDBインデックス | **影響を受けない** | **同左** |
 
 検索側を完全に固定することで、変数がエージェントを駆動するLLM1つだけになる。
-**`LLM_BACKEND=local` でも `OPENAI_API_KEY` は必要**（judge が使う）。
+`LLM_BACKEND=local` でも `EMBEDDING_BACKEND` が既定なら `OPENAI_API_KEY` は必要（埋め込みが使う）。
+**両方 local なら比較実験はキー無しで回る**（採点に LLM を使っていないため。下記）。
 
 ```bash
 npm run serve:local        # llama.cpp サーバを起動（docker/compose.yaml）
 npm run verify-local-llm   # 生成／ツール呼び出し／構造化出力を個別に確認（本番前に必須）
 ```
 
-judge をローカルに倒してはいけない理由と、ランタイムの選定理由は
+`JUDGE_MODEL` をローカルに倒してはいけない理由と、ランタイムの選定理由は
 `decisions/0013-local-llm-backend.md` を参照。
 
 ## 埋め込みバックエンドの切り替え
@@ -69,7 +71,7 @@ judge をローカルに倒してはいけない理由と、ランタイムの�
 | 埋め込み | `text-embedding-3-large`（3072d） | `ruri-v3-310m`（768d）/ `bge-m3`（1024d） |
 | 実行場所 | クラウドAPI | llama.cpp **CPU**（GPU非占有 / port 8081） |
 | LanceDBインデックス | `data/index-openai-3large/` | `data/index-ruri-v3-310m/` 等 |
-| LLM-as-judge | **OpenAI 固定** | **OpenAI 固定** |
+| golden set 生成モデル | **OpenAI 固定** | **OpenAI 固定** |
 
 インデックスを分けたうえで `index-meta.json`（指紋）を照合するのは、
 **次元が同じで意味が違うベクトル空間は検索が成功してしまい、壊れていることに
@@ -81,14 +83,28 @@ npm run verify-embedding   # 次元・正規化・等方性・prefix・順序保
 npm run build-index        # 埋め込みを変えたら必ず作り直す
 ```
 
-## LLM-as-judge に同じモデルを使うことについて
+## LLM-as-judge を使っていない
 
-既定では judge も生成と同じ `gpt-5.6-luna`。採点役に被験者と同じモデルを使うと
-自己評価バイアスが入りうる。3パターンすべてが同一モデル生成なので**相対比較は成立する**が、
-faithfulness / answer-relevancy の**絶対値は甘めに出る**可能性がある。
+`JUDGE_MODEL` という定数名に反して、**比較実験の採点に LLM は一切使っていない。**
+この定数を実際に呼び出しているのは `evals/generate-golden-set.ts` /
+`generate-multihop-set.ts` の2箇所、つまり**問題作成時のみ**。
 
-3パターンのスコアが頭打ちして差がつかなくなったら `JUDGE_MODEL` だけを
-`"openai/gpt-5.6-terra"` に上げる。
+`npm run eval` の採点は `evals/scorers/` の2つだけ:
+
+| スコアラー | 判定方法 |
+|---|---|
+| retrieval-recall（**主指標**） | `golden_chunk_ids` と `retrieved_chunk_ids` の集合比較 |
+| skill-selection-accuracy | 期待ラベルとの一致 |
+
+どちらも決定的な関数で、**実行ごとにブレず、追加のAPI課金も発生しない**。
+faithfulness / answer-relevancy を採らないのは、生成品質は測れても
+「検索が正解を引けたか」を直接には表さないため（`evals/scorers/retrieval-recall.ts` のコメント）。
+
+したがって `JUDGE_MODEL` を固定すべき理由は「採点に使うから」ではなく
+「**問題を作ったモデルだから**」。作り直すとものさし自体が変わる。
+`decisions/0014-local-embedding-backend.md` に経緯を記録している。
+
+なお `@mastra/evals` は package.json の依存に残っているが、現状どこからも import していない。
 
 ## 使わなかったもの
 
