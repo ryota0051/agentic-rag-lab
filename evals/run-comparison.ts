@@ -151,12 +151,17 @@ async function runPattern(
  *
  * 初回実行では終盤の 429 で数十分ぶんの結果が丸ごと失われた。
  * パターンごとに書き出しておけば、最後に落ちても手前までは残る。
+ *
+ * **`meta` は writeReport と同じものを必ず入れる。** ここを省くと、落ちた実行の
+ * raw-latest.json を `--baseline` で拾ったときに「実行条件が記録されていない
+ * （埋め込み軸の導入前のログ）」と誤判定され、異なるベクトル空間のログを混ぜる事故を
+ * 検出できなくなる。中途半端に残ったログこそ素性が分からないと危ない。
  */
 async function checkpoint(records: RunRecord[], failures: FailedRun[]): Promise<void> {
   await mkdir(EXPERIMENTS_DIR, { recursive: true });
   await writeFile(
     path.join(EXPERIMENTS_DIR, "raw-latest.json"),
-    JSON.stringify({ records, failures }, null, 2),
+    JSON.stringify({ meta: currentRunMeta(), records, failures }, null, 2),
     "utf8",
   );
 }
