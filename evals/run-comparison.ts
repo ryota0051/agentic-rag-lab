@@ -347,7 +347,8 @@ function buildReport(
 - LanceDBインデックス: \`${path.basename(DB_DIR)}\`（構築: ${indexMeta?.builtAt ?? "不明"} / ${
     indexMeta?.chunks ?? "?"
   } チャンク / FTS: \`${indexMeta?.ftsTokenizer ?? "?"}\`）
-- LLM-as-judge: \`${JUDGE_MODEL}\`（**バックエンドに関わらず固定**。ものさしを動かすと過去のレポートと比較できなくなる）
+- golden set 生成モデル: \`${JUDGE_MODEL}\`（**バックエンドに関わらず固定**。問題を作り直すとものさし自体が変わる）
+- 採点: retrieval-recall（chunk_id の集合比較）と skill-selection-accuracy（ラベル一致）のみ。**LLM は使っていない**
 - golden set: ${items.length} 問（easy ${easyN} / multihop ${mhN}）
 - 最終コンテキスト件数: k=${FINAL_CONTEXT_K}（3パターン共通の上限）
 - 同時実行数: ${CONCURRENCY}
@@ -355,9 +356,8 @@ function buildReport(
 ${
   EMBEDDING_BACKEND === "local"
     ? "\n> ⚠️ **埋め込みが既定（text-embedding-3-large）と異なります。**\n" +
-      "> retrieval-recall / faithfulness / answer-relevancy を、埋め込みが違う過去のレポートと\n" +
-      "> 直接比較しないでください。比較する場合は golden set と生成バックエンドを揃え、\n" +
-      "> **埋め込みだけを変えた2本**を並べること。\n"
+      "> retrieval-recall を、埋め込みが違う過去のレポートと直接比較しないでください。\n" +
+      "> 比較する場合は golden set と生成バックエンドを揃え、**埋め込みだけを変えた2本**を並べること。\n"
     : ""
 }
 
@@ -505,6 +505,7 @@ interface RunMeta {
   embeddingDimensions: number;
   indexDir: string;
   ftsTokenizer?: string;
+  /** golden set を生成したモデル。採点には使われない（llm-client.ts の JUDGE_MODEL 参照） */
   judgeModel: string;
 }
 

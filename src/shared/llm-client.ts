@@ -54,15 +54,21 @@ export const GENERATION_MODEL_LABEL =
     : "openai/gpt-5.6-luna";
 
 /**
- * LLM-as-judge 用。既定は生成と同じモデル。
+ * golden set（ものさし）を作るモデル。
  *
- * **バックエンドを切り替えてもここはクラウドのまま固定する。** golden set はこのモデルで
- * 生成されている。判定側までローカルに差し替えるとものさし自体が変わり、過去の実験レポートと
- * 比較できなくなる（「生成・エージェントのモデルだけを変数にする」という実験設計が崩れる）。
+ * **名前に反して、比較実験の採点には使われていない。** 実際に呼び出しているのは
+ * `evals/generate-golden-set.ts` と `evals/generate-multihop-set.ts` の2箇所だけで、
+ * `npm run eval` の採点は `evals/scorers/` の2つ——retrieval-recall（chunk_id の集合比較）と
+ * skill-selection-accuracy（ラベル一致）——のみ。**どちらも LLM を使わない決定的な関数**。
+ * faithfulness / answer-relevancy のような LLM-as-judge 指標は実装していない
+ * （実行ごとにブレるうえ「検索が正解を引けたか」を直接表さないため。retrieval-recall.ts 参照）。
+ * `run-comparison.ts` がこの定数を参照しているのはレポートと生ログへの記録のためだけ。
  *
- * 採点役に被験者と同じモデルを使うと自己評価バイアスが入りうる。3パターン全てが同一モデル生成
- * なので相対比較は成立するが、faithfulness / answer-relevancy の絶対値は甘めに出る可能性がある。
- * 3パターンのスコアが頭打ちして差がつかなくなったら "openai/gpt-5.6-terra" に上げる。
+ * **それでもここはクラウド固定にする。** golden set はこのモデルで生成されており、
+ * 作り直すとものさし自体が変わって過去の実験レポートと比較できなくなるため。
+ * つまり固定すべき理由は「採点に使うから」ではなく「**問題を作ったモデルだから**」。
+ *
+ * 名前が実態とズレているのは、当初 LLM-as-judge スコアラーを入れる設計だった名残。
  */
 export const JUDGE_MODEL = "openai/gpt-5.6-luna";
 
@@ -238,7 +244,8 @@ let localEmbedClient: OpenAI | undefined;
  * ローカル埋め込みサーバ用の OpenAI 互換クライアント。
  *
  * `getOpenAI()` と分けているのは、**ローカル埋め込み時に OPENAI_API_KEY を要求しないため**。
- * ただし judge は依然 OpenAI 固定なので、比較実験を回すならキーは結局必要になる。
+ * 採点は LLM を使わない決定的な関数なので（`JUDGE_MODEL` のコメント参照）、
+ * `LLM_BACKEND` と `EMBEDDING_BACKEND` の両方が local なら比較実験もキー無しで回る。
  *
  * timeout: CPU 実行は1バッチ数秒〜数十秒かかる。SDK 既定の10分でも足りるが、
  * 「固まったのか遅いだけなのか」を切り分けたいので明示する。

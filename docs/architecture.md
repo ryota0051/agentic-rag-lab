@@ -177,7 +177,7 @@ golden set は `easy`（単発で引ける対照群）と `multihop`（複数チ
 `LLM_BACKEND=local` で、生成・エージェントのモデルをローカルの Qwen3.8-27B
 （llama.cpp / Docker）に切り替える。**`LLM_BACKEND` は埋め込みに影響しない**
 （埋め込みは独立の `EMBEDDING_BACKEND` 軸。下記「第3の実験軸」）ため、
-この軸を動かす限り検索側は完全に固定されたまま比較できる。LLM-as-judge も固定。
+この軸を動かす限り検索側は完全に固定されたまま比較できる。golden set も作り直さない。
 詳細は [`decisions/0013-local-llm-backend.md`](decisions/0013-local-llm-backend.md)。
 
 ### ツール使用の記録
@@ -198,8 +198,12 @@ golden set は `easy`（単発で引ける対照群）と `multihop`（複数チ
 
 `EMBEDDING_BACKEND=local` で埋め込みをローカルの `ruri-v3-310m`（日本語特化・768次元・
 llama.cpp CPU）に切り替える。`LLM_BACKEND` とは**独立の軸**で、両方を同時に動かすと
-どちらの寄与か分離できなくなる。LLM-as-judge はこの軸でも固定。
+どちらの寄与か分離できなくなる。golden set はこの軸でも作り直さない。
 詳細は [`decisions/0014-local-embedding-backend.md`](decisions/0014-local-embedding-backend.md)。
+
+なお**採点に LLM は使っていない**（`evals/scorers/` の決定的な関数のみ）。
+`JUDGE_MODEL` は名前に反して golden set の生成時にしか呼ばれず、両バックエンドを
+local にすれば比較実験は OpenAI への呼び出しゼロで回る。
 
 **この軸の主計測器は `npm run probe:retrieval`。** 生成を挟まないので数十秒で回り、
 埋め込みの差が recall にどう出るかだけを直接見られる。実測では純ベクトル検索は

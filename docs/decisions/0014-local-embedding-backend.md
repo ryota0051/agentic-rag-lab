@@ -7,14 +7,16 @@
 ## 背景
 
 `0013` で生成・エージェントだけをローカル（Qwen3.8-27B / llama.cpp）に倒せるようにした。
-残る OpenAI 依存は**埋め込み**と **LLM-as-judge** の2つ。
+残る OpenAI 依存は**埋め込み**と、golden set を作る `JUDGE_MODEL` の2つ
+（後者の実態については後述の「`JUDGE_MODEL` は OpenAI 固定のまま」を参照）。
 
 このうち埋め込みをローカル化できると、新しい実験軸が立つ。3パターン比較が
 「検索戦略とループの有無」を、`0013` が「エージェントを駆動するLLM」を変数にするのに対し、
 ここでは **retrieval そのものの質**を変数にできる。具体的には
 「日本語特化の小型埋め込みは、3072次元のクラウドAPIに対してどこまで retrieval を保てるか」。
 
-副次的に、judge を除けばローカル完結で実験を回せるようになる（API課金なしで反復できる）。
+副次的に、**実験をローカル完結で回せるようになる**（golden set を作り直さない限り、
+比較実験の実行中に OpenAI への呼び出しは発生しない。後述）。
 
 ## 決定
 
@@ -141,14 +143,34 @@ role を受け取る公開関数は作らなかった。呼び出し側3箇所�
 prefix は埋め込みに渡すテキストにだけ付ける。LanceDB の `text` 列（BM25 の対象であり
 fetch が返す本文でもある）に混ぜてはいけない。
 
-## judge は OpenAI 固定のまま
+## `JUDGE_MODEL` は OpenAI 固定のまま（ただし理由は「採点」ではない）
 
-`0013` の結論をそのまま維持する。golden set はこのモデルで生成されており、
-判定側を差し替えるとものさし自体が変わって過去の実験レポートと比較できなくなる。
+`0013` の結論はそのまま維持する。**ただし本ADRを書く過程で、`JUDGE_MODEL` の実態が
+名前とズレていることが分かったので、ここで正確に記録しておく。**
 
-**埋め込みを動かせるようにした以上、judge はなおさら動かせない。**
-ものさしを2本同時に動かすと何も測れなくなる。
-したがって `LLM_BACKEND=local` かつ `EMBEDDING_BACKEND=local` でも `OPENAI_API_KEY` は必要。
+`JUDGE_MODEL` を実際に呼び出しているのは `evals/generate-golden-set.ts` と
+`evals/generate-multihop-set.ts` の2箇所だけ、つまり**問題作成時のみ**。
+`npm run eval` の採点は `evals/scorers/` の2つ——retrieval-recall（`golden_chunk_ids` と
+`retrieved_chunk_ids` の集合比較）と skill-selection-accuracy（ラベル一致）——だけで、
+**どちらも LLM を使わない決定的な関数**である。faithfulness / answer-relevancy のような
+LLM-as-judge 指標は実装されていない（`retrieval-recall.ts` のコメントが理由を述べている:
+実行ごとにブレるうえ「検索が正解を引けたか」を直接には表さない）。
+`run-comparison.ts` がこの定数を参照しているのはレポートと生ログへの記録のためだけ。
+
+したがって固定すべき理由は「**採点に使うから**」ではなく「**問題を作ったモデルだから**」。
+golden set を別モデルで作り直すとものさし自体が変わり、過去の実験レポートと比較できなくなる。
+結論は変わらないが、根拠が違う。
+
+**この訂正の実務上の帰結**: `LLM_BACKEND=local` かつ `EMBEDDING_BACKEND=local` なら、
+比較実験の実行中に OpenAI への呼び出しは**1回も発生しない**（`getOpenAI()` は遅延初期化で、
+呼ばれる経路がない）。`OPENAI_API_KEY` が要るのはどちらかのバックエンドが `openai` のときと、
+`gen:golden` / `gen:multihop` を回すときだけ。`0013` と `.env.example` の
+「local でも judge が使うのでキーは常に必要」という記述は誤りだった
+（`0013` 時点では埋め込みが OpenAI 固定だったため、結論としては正しかった）。
+
+定数名が実態とズレているのは、当初 LLM-as-judge スコアラーを入れる設計だった名残。
+改名は既存レポートの `judgeModel` フィールドと突き合わなくなるため見送り、
+`llm-client.ts` のコメントで実態を明記する形にした。
 
 ## 検証ゲート: `npm run verify-embedding`
 
