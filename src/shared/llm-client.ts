@@ -88,6 +88,19 @@ export const JEV_BASE_URL = process.env.JEV_BASE_URL ?? "https://api.typesafe.ai
 /** 入力 100 万トークンあたりの USD。出力は無料（2026-09-21 時点の公開価格） */
 export const JEV_USD_PER_M_INPUT = 0.042;
 
+/**
+ * パターン3の判定ステップ（現状は収集完了の判定のみ）を誰が行うか。
+ * **`LLM_BACKEND` / `EMBEDDING_BACKEND` とは独立の軸**で、同時に動かさないこと。
+ * 判定器はパターン3にしか無いので、不変条件2（生成モデル・生成プロンプトの共通化）には影響しない。
+ * → docs/decisions/0015-jev-decision-model.md
+ */
+export type DecisionBackend = "llm" | "jev";
+export const DECISION_BACKEND: DecisionBackend =
+  process.env.DECISION_BACKEND === "jev" ? "jev" : "llm";
+
+/** Jev の p(十分) がこれ以上なら収集を終える。値の根拠は experiments/2026-10-04-jev-evidence-gate.md */
+export const JEV_EVIDENCE_TAU = Number(process.env.JEV_EVIDENCE_TAU ?? 0.5);
+
 /* ===== 埋め込み ===================================================== */
 
 /**

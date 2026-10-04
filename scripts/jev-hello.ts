@@ -8,7 +8,7 @@ import { isMain } from "../src/shared/is-main.js";
 import { evaluateJev, type JevRequest, type JevResult } from "../src/shared/jev-client.js";
 import { FINAL_CONTEXT_K, GENERATION_MODEL_LABEL, JEV_MODEL } from "../src/shared/llm-client.js";
 import type { FetchResult } from "../src/shared/types.js";
-import { checkEvidence } from "../src/workflows/agentic-rag/evidence-check.js";
+import { checkEvidenceLlm as checkEvidence } from "../src/workflows/agentic-rag/evidence-check.js";
 
 /**
  * Jev を触ってみるスクリプト。**「試してみた」記事の素材を残すこと**が目的なので、

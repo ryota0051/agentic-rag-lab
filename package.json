@@ -30,7 +30,8 @@
     "diagnose": "tsx evals/diagnose-agentic.ts",
     "typecheck": "tsc --noEmit",
     "jev:hello": "tsx scripts/jev-hello.ts",
-    "eval:skill:jev": "tsx evals/run-skill-eval-jev.ts"
+    "eval:skill:jev": "tsx evals/run-skill-eval-jev.ts",
+    "eval:evidence:jev": "tsx evals/run-evidence-eval-jev.ts"
   },
   "dependencies": {
     "@lancedb/lancedb": "^0.33.0",
