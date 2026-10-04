@@ -218,6 +218,14 @@ local にすれば比較実験は OpenAI への呼び出しゼロで回る。
 チャンク分割は `data/raw` からのみ決まるので `chunk_id` は埋め込みをまたいで不変。
 **golden set はそのまま使い回せる。** BM25 も埋め込みに依存しない。
 
+### 第4の実験軸: 判定器（`DECISION_BACKEND`）
+
+`DECISION_BACKEND=jev` で、パターン3の**収集完了の判定**を、判定専用モデル Jev（TypeSafe）の確率判定に切り替える。
+p(十分) ≥ `JEV_EVIDENCE_TAU`（既定 0.5）なら収集を終える。不足のときだけ、従来の LLM が missing / followup_query を書く。
+判定器はパターン3にしか無いので、不変条件2（生成モデル・生成プロンプトの共通化）には影響しない。
+他の軸と同時に動かさないこと。既定は `llm`。Jev は API でしか提供されておらず、`TYPESAFE_API_KEY` が要る。
+→ [`decisions/0015-jev-decision-model.md`](decisions/0015-jev-decision-model.md)
+
 ## 次のステップ候補
 
 - 実験ログの定性観察をもとに、turn 上限や description を調整して再実験する
