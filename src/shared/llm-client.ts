@@ -72,6 +72,22 @@ export const GENERATION_MODEL_LABEL =
  */
 export const JUDGE_MODEL = "openai/gpt-5.6-luna";
 
+/* ===== 判定モデル（Jev） ============================================ */
+
+/**
+ * TypeSafe AI の判定専用モデル Jev（System One Model）。文章を生成せず、
+ * 状態を受け取って「有限の選択肢＋確率」だけを返す。
+ *
+ * 生成モデルではないので不変条件2の対象外だが、モデル文字列を散らさない方針は同じ。
+ * 呼び出しは `src/shared/jev-client.ts` に集約している。
+ * エイリアス `jev-latest` は実体のバージョン（例: `jev-1.13.0`）に解決されるので、
+ * 実験ログにはレスポンスの `model` を記録すること（→ docs/decisions/0015-jev-decision-model.md）。
+ */
+export const JEV_MODEL = "jev-latest";
+export const JEV_BASE_URL = process.env.JEV_BASE_URL ?? "https://api.typesafe.ai";
+/** 入力 100 万トークンあたりの USD。出力は無料（2026-09-21 時点の公開価格） */
+export const JEV_USD_PER_M_INPUT = 0.042;
+
 /* ===== 埋め込み ===================================================== */
 
 /**
