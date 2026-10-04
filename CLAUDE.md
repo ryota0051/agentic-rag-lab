@@ -95,5 +95,14 @@ npm scripts はサービス名を明示している。素の `docker compose --p
 プロファイルを持たない生成サーバ（18GB）まで起動し、素の `docker compose down` は
 プロジェクト全体を落とすので、必ず scripts を使うこと。
 
+判定専用モデル Jev（`TYPESAFE_API_KEY` が必要）は、パターン3の収集完了判定にだけ差し込める。
+`DECISION_BACKEND=jev` で切り替える（既定は `llm`）。`LLM_BACKEND` / `EMBEDDING_BACKEND` とは独立の軸（ADR 0015）。
+
+```bash
+npm run jev:hello            # Jev を触る試行ログ（experiments/ に出力。既存ファイルは --force なしでは上書きしない）
+npm run eval:skill:jev       # スキル分岐の LLM vs Jev（オフライン）
+npm run eval:evidence:jev    # 収集完了判定の LLM vs Jev（オフライン）
+```
+
 `npm run eval` は `--difficulty=multihop` で難易度を絞れる（ローカルは実質直列で時間がかかるため）。
 レポート名は backend と難易度から決まる。`--slug=` で上書き可。

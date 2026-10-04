@@ -1,8 +1,14 @@
 import { Agent } from "@mastra/core/agent";
 import { z } from "zod";
 import { readUsage } from "../../shared/generate.js";
-import { FINAL_CONTEXT_K, GENERATION_MODEL } from "../../shared/llm-client.js";
+import {
+  DECISION_BACKEND,
+  FINAL_CONTEXT_K,
+  GENERATION_MODEL,
+  JEV_EVIDENCE_TAU,
+} from "../../shared/llm-client.js";
 import type { FetchResult } from "../../shared/types.js";
+import { judgeEvidenceJev, truncateForJev } from "./jev-decisions.js";
 
 /**
  * 根拠の充足チェック。**回答生成の前**に、集めた根拠だけで質問に答えられるかを判定する。
@@ -81,9 +87,45 @@ export interface EvidenceVerdictResult {
    * **判定できなかった実行が「1回で足りた」＝ループ不要として記録される**
    */
   structuredOutputFailed: boolean;
+  /** DECISION_BACKEND=jev のときだけ入る。Jev の p(十分) */
+  jevPSufficient?: number;
 }
 
+/**
+ * 収集完了の判定。`DECISION_BACKEND` で判定器を切り替える（→ docs/decisions/0015）。
+ *
+ * jev のときは、「十分か」を Jev の確率だけで決める。不足のときだけ LLM を呼び、
+ * missing / followup_query（文章）を書かせる。Jev は文章を出せないため。
+ * このとき LLM が sufficient=true を返しても**判定は覆さない**。判定器を差し替える実験なので、
+ * LLM に拒否権を持たせると、何を比べているのかが曖昧になる。
+ */
 export async function checkEvidence(
+  question: string,
+  docs: FetchResult[],
+  triedQueries: string[],
+): Promise<EvidenceVerdictResult> {
+  if (DECISION_BACKEND === "llm") return checkEvidenceLlm(question, docs, triedQueries);
+
+  // Jev の state 上限（8,000字）に収めるため切り詰める。LLM には従来どおり全文を渡す
+  const jev = await judgeEvidenceJev(question, truncateForJev(docs));
+  if (jev.pSufficient >= JEV_EVIDENCE_TAU) {
+    return {
+      sufficient: true,
+      missing: "",
+      followupQuery: "",
+      inputTokens: 0,
+      outputTokens: 0,
+      llmCalls: 0,
+      structuredOutputFailed: false,
+      jevPSufficient: jev.pSufficient,
+    };
+  }
+  const hint = await checkEvidenceLlm(question, docs, triedQueries);
+  return { ...hint, sufficient: false, jevPSufficient: jev.pSufficient };
+}
+
+/** LLM による判定（従来の実装）。オフライン比較（evals/run-evidence-eval-jev.ts）からも直接呼ぶ */
+export async function checkEvidenceLlm(
   question: string,
   docs: FetchResult[],
   triedQueries: string[],

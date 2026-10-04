@@ -7,12 +7,15 @@ import { runNaiveRag } from "../src/workflows/naive-rag.js";
 import { isMain } from "../src/shared/is-main.js";
 import { withRetry } from "../src/shared/retry.js";
 import {
+  DECISION_BACKEND,
   EMBEDDING_BACKEND,
   EMBEDDING_DIMENSIONS,
   EMBEDDING_MODEL_LABEL,
   EMBEDDING_SLUG,
   FINAL_CONTEXT_K,
   GENERATION_MODEL_LABEL,
+  JEV_EVIDENCE_TAU,
+  JEV_MODEL,
   JUDGE_MODEL,
   LLM_BACKEND,
 } from "../src/shared/llm-client.js";
@@ -349,6 +352,11 @@ function buildReport(
       : ""
   }
 - 埋め込み: \`${EMBEDDING_MODEL_LABEL}\` / ${EMBEDDING_DIMENSIONS}次元（バックエンド: \`${EMBEDDING_BACKEND}\`）
+- 判定器（パターン3の収集完了判定）: \`${DECISION_BACKEND}\`${
+    DECISION_BACKEND === "jev"
+      ? `（\`${JEV_MODEL}\`、p(十分) ≥ ${JEV_EVIDENCE_TAU} で収集終了。不足時の missing / followup だけ LLM。ADR 0015）`
+      : ""
+  }
 - LanceDBインデックス: \`${path.basename(DB_DIR)}\`（構築: ${indexMeta?.builtAt ?? "不明"} / ${
     indexMeta?.chunks ?? "?"
   } チャンク / FTS: \`${indexMeta?.ftsTokenizer ?? "?"}\`）
@@ -498,7 +506,9 @@ function defaultSlug(difficulty?: Difficulty): string {
   // 既定の埋め込みではスラグに何も足さない。**過去のレポートとファイル名が完全に一致し、
   // 既存の比較系列がそのまま読める。** 埋め込みを変えたときだけ slug が伸びる
   const emb = EMBEDDING_BACKEND === "openai" ? [] : [`emb-${EMBEDDING_SLUG}`];
-  return [backend, ...emb, difficulty ?? "full", "naive-vs-hybrid-vs-agentic"].join("-");
+  // 判定器も同じく、既定（llm）では何も足さない
+  const decision = DECISION_BACKEND === "llm" ? [] : [`decision-${DECISION_BACKEND}`];
+  return [backend, ...emb, ...decision, difficulty ?? "full", "naive-vs-hybrid-vs-agentic"].join("-");
 }
 
 /** 生ログに残す実行条件。`--baseline` で異なる条件のログを混ぜていないか検査するために使う */
@@ -506,6 +516,8 @@ interface RunMeta {
   generationLabel: string;
   llmBackend: string;
   embeddingBackend: string;
+  /** パターン3の判定器。0015 以前のログには無い（＝llm） */
+  decisionBackend?: string;
   embeddingSlug: string;
   embeddingDimensions: number;
   indexDir: string;
@@ -519,6 +531,7 @@ function currentRunMeta(): RunMeta {
     generationLabel: GENERATION_MODEL_LABEL,
     llmBackend: LLM_BACKEND,
     embeddingBackend: EMBEDDING_BACKEND,
+    decisionBackend: DECISION_BACKEND,
     embeddingSlug: EMBEDDING_SLUG,
     embeddingDimensions: EMBEDDING_DIMENSIONS,
     indexDir: path.basename(DB_DIR),

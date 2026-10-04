@@ -1,0 +1,1028 @@
+{
+  "date": "2026-10-04",
+  "models": [
+    "jev-1.13.0"
+  ],
+  "rows": [
+    {
+      "c": {
+        "question": "こんにちは。今日はいい天気ですね",
+        "expected_skill": "direct",
+        "category": "greeting",
+        "note": "純粋な挨拶。固有名詞も事実問い合わせもない"
+      },
+      "llm": [
+        {
+          "skill": "direct",
+          "latencyMs": 2517,
+          "reason": "挨拶と雑談であり、具体的な情報を求めていないため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1487,
+          "reason": "挨拶と雑談であり、具体的な情報を求めていないため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1450,
+          "reason": "挨拶と雑談であり、具体的な情報を求めていないため。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.01,
+          "pDirect": 0.99,
+          "latencyMs": 164,
+          "inputTokens": 1371,
+          "costUsd": 0.000057582000000000005,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.01,
+          "pDirect": 0.99,
+          "latencyMs": 197,
+          "inputTokens": 1371,
+          "costUsd": 0.000057582000000000005,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.02,
+          "pDirect": 0.98,
+          "latencyMs": 182,
+          "inputTokens": 1371,
+          "costUsd": 0.000057582000000000005,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "ありがとう、助かりました",
+        "expected_skill": "direct",
+        "category": "greeting",
+        "note": "社交的な発話"
+      },
+      "llm": [
+        {
+          "skill": "direct",
+          "latencyMs": 1783,
+          "reason": "お礼のみの社交的な発話で、情報検索は不要です。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1412,
+          "reason": "お礼のみの社交的な発話で、情報検索を必要としないため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 2819,
+          "reason": "お礼のみの社交的な発話で、情報を求めていないため。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.01,
+          "pDirect": 0.99,
+          "latencyMs": 179,
+          "inputTokens": 1367,
+          "costUsd": 0.000057414,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.01,
+          "pDirect": 0.99,
+          "latencyMs": 172,
+          "inputTokens": 1367,
+          "costUsd": 0.000057414,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.01,
+          "pDirect": 0.99,
+          "latencyMs": 215,
+          "inputTokens": 1367,
+          "costUsd": 0.000057414,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "さっきの回答、もう少し短くまとめてくれる？",
+        "expected_skill": "direct",
+        "category": "conversation-meta",
+        "note": "会話メタ発言。description に明示されている典型例"
+      },
+      "llm": [
+        {
+          "skill": "direct",
+          "latencyMs": 3763,
+          "reason": "直前の回答に対する短縮依頼であり、会話メタ発言に該当するため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1581,
+          "reason": "直前の回答に対する要約依頼であり、会話メタ発言に該当するため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1675,
+          "reason": "直前の回答を短くするという会話メタ発言に該当するため"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.01,
+          "pDirect": 0.99,
+          "latencyMs": 173,
+          "inputTokens": 1380,
+          "costUsd": 0.00005796,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.01,
+          "pDirect": 0.99,
+          "latencyMs": 173,
+          "inputTokens": 1380,
+          "costUsd": 0.00005796,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.01,
+          "pDirect": 0.99,
+          "latencyMs": 255,
+          "inputTokens": 1380,
+          "costUsd": 0.00005796,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "今の説明、もう少し詳しく言い換えてください",
+        "expected_skill": "direct",
+        "category": "conversation-meta",
+        "note": "会話メタ発言。直前の出力が対象で文書参照は不要"
+      },
+      "llm": [
+        {
+          "skill": "direct",
+          "latencyMs": 2249,
+          "reason": "直前の説明内容を詳しく言い換える依頼であり、会話メタ発言に該当するため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1672,
+          "reason": "直前の説明そのものを対象にした「もう少し詳しく言い換えて」という会話メタ発言に該当するため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1631,
+          "reason": "直前の説明自体を対象にした「詳しく言い換えて」という会話メタ発言に該当するため"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.02,
+          "pDirect": 0.98,
+          "latencyMs": 170,
+          "inputTokens": 1380,
+          "costUsd": 0.00005796,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.02,
+          "pDirect": 0.98,
+          "latencyMs": 186,
+          "inputTokens": 1380,
+          "costUsd": 0.00005796,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.02,
+          "pDirect": 0.98,
+          "latencyMs": 165,
+          "inputTokens": 1380,
+          "costUsd": 0.00005796,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "あなたはどんなことができますか？",
+        "expected_skill": "direct",
+        "category": "conversation-meta",
+        "note": "アシスタント自身についてのメタ質問"
+      },
+      "llm": [
+        {
+          "skill": "direct",
+          "latencyMs": 1911,
+          "reason": "アシスタント自身についての質問であり、検索や外部情報を必要としないため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1405,
+          "reason": "アシスタント自身について尋ねる質問であり、直接回答の対象です。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1751,
+          "reason": "アシスタント自身についての質問であり、直接回答の対象です。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.03,
+          "pDirect": 0.97,
+          "latencyMs": 160,
+          "inputTokens": 1375,
+          "costUsd": 0.00005775,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.04,
+          "pDirect": 0.96,
+          "latencyMs": 161,
+          "inputTokens": 1375,
+          "costUsd": 0.00005775,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.04,
+          "pDirect": 0.96,
+          "latencyMs": 168,
+          "inputTokens": 1375,
+          "costUsd": 0.00005775,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "一般論として、技術記事は結論から書くのと背景から書くのとではどちらが読まれやすいと思いますか？",
+        "expected_skill": "direct",
+        "category": "opinion",
+        "note": "「一般論として」と明示。固有名詞なし、事実の正確性に依存しない意見"
+      },
+      "llm": [
+        {
+          "skill": "direct",
+          "latencyMs": 1988,
+          "reason": "「一般論として」と明示された、技術記事の構成に関する意見・判断を求める質問であり、特定の文書や最新情報の参照を必要としないため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1827,
+          "reason": "「一般論として」と明示された、事実の正確性に依存しない文章構成についての意見・助言だからです。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 2070,
+          "reason": "「一般論として」と明示された、事実の正確性に依存しない文章構成についての意見・助言だから。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.04,
+          "pDirect": 0.96,
+          "latencyMs": 159,
+          "inputTokens": 1406,
+          "costUsd": 0.000059052,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.06,
+          "pDirect": 0.94,
+          "latencyMs": 191,
+          "inputTokens": 1406,
+          "costUsd": 0.000059052,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.05,
+          "pDirect": 0.95,
+          "latencyMs": 235,
+          "inputTokens": 1406,
+          "costUsd": 0.000059052,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "仮の話ですが、検証環境のGPUが1枚しかない場合と潤沢にある場合とで、開発の進め方の考え方はどう変わると思いますか？",
+        "expected_skill": "direct",
+        "category": "hypothetical",
+        "note": "「仮の話ですが」と前置き。GPU は一般語であり特定文書を指さない"
+      },
+      "llm": [
+        {
+          "skill": "direct",
+          "latencyMs": 1766,
+          "reason": "「仮の話」と明示された一般的な開発方針の質問であり、特定の製品・技術・数値・文書の参照を必要としないため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1807,
+          "reason": "ユーザーが「仮の話」と明示しており、特定の製品・技術仕様・数値の事実確認ではなく、一般的な考え方や意見を求めているため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1708,
+          "reason": "「仮の話」と明示された、事実の正確性よりも一般的な考え方を求める質問であり、特定の製品・技術・数値にも依存していないため。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.09,
+          "pDirect": 0.91,
+          "latencyMs": 165,
+          "inputTokens": 1417,
+          "costUsd": 0.000059514000000000007,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.1,
+          "pDirect": 0.9,
+          "latencyMs": 180,
+          "inputTokens": 1417,
+          "costUsd": 0.000059514000000000007,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.13,
+          "pDirect": 0.87,
+          "latencyMs": 159,
+          "inputTokens": 1417,
+          "costUsd": 0.000059514000000000007,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "1024 × 768 はいくつになりますか？",
+        "expected_skill": "direct",
+        "category": "calculation",
+        "note": "文書を参照しない単純計算"
+      },
+      "llm": [
+        {
+          "skill": "direct",
+          "latencyMs": 1658,
+          "reason": "文書参照を必要としない純粋な計算だからです。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1362,
+          "reason": "文書を参照しない純粋な計算だからです。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1402,
+          "reason": "文書参照を必要としない純粋な計算だからです。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.48,
+          "pDirect": 0.52,
+          "latencyMs": 174,
+          "inputTokens": 1380,
+          "costUsd": 0.00005796,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.41,
+          "pDirect": 0.59,
+          "latencyMs": 169,
+          "inputTokens": 1380,
+          "costUsd": 0.00005796,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.45,
+          "pDirect": 0.55,
+          "latencyMs": 160,
+          "inputTokens": 1380,
+          "costUsd": 0.00005796,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "ブログ記事のタイトルを5案ブレインストーミングしてください",
+        "expected_skill": "direct",
+        "category": "brainstorm",
+        "note": "事実の正確性に依存しない発想タスク"
+      },
+      "llm": [
+        {
+          "skill": "direct",
+          "latencyMs": 1913,
+          "reason": "タイトル案のブレインストーミングは、事実の正確性に依存しない発想であり、直接回答スキルの対象です。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1632,
+          "reason": "ブログ記事タイトルのブレインストーミングは、事実の正確性に依存しない発想であり、直接回答スキルの対象です。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 1573,
+          "reason": "ブログ記事タイトルのブレインストーミングは、事実の正確性に依存しない発想の依頼に該当するため。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.01,
+          "pDirect": 0.99,
+          "latencyMs": 195,
+          "inputTokens": 1388,
+          "costUsd": 0.000058296,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.01,
+          "pDirect": 0.99,
+          "latencyMs": 166,
+          "inputTokens": 1388,
+          "costUsd": 0.000058296,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.01,
+          "pDirect": 0.99,
+          "latencyMs": 183,
+          "inputTokens": 1388,
+          "costUsd": 0.000058296,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "vLLM って結局どうなんですか？",
+        "expected_skill": "search",
+        "category": "domain-casual",
+        "note": "雑談的な口調だが vLLM という固有名詞を含む。非対称設計では検索側に倒す"
+      },
+      "llm": [
+        {
+          "skill": "search",
+          "latencyMs": 1544,
+          "reason": "「vLLM」は特定のライブラリ名であり、最新の仕様・性能・対応状況など文書や情報源の確認が必要な質問のため。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 3105,
+          "reason": "vLLMは特定のソフトウェア・技術名であり、最新の機能、性能、対応状況などの具体的な情報を確認して回答する必要があるため。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1849,
+          "reason": "「vLLM」というライブラリ名・製品名を含む質問であり、最新の仕様や評価、文書上の位置づけを確認して答える必要があるため。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 1,
+          "pDirect": 0,
+          "latencyMs": 156,
+          "inputTokens": 1375,
+          "costUsd": 0.00005775,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 1,
+          "pDirect": 0,
+          "latencyMs": 191,
+          "inputTokens": 1375,
+          "costUsd": 0.00005775,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 1,
+          "pDirect": 0,
+          "latencyMs": 155,
+          "inputTokens": 1375,
+          "costUsd": 0.00005775,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "max-model-len ってどれくらいにしておけばいいんだっけ？",
+        "expected_skill": "search",
+        "category": "domain-casual",
+        "note": "「だっけ」というくだけた口調。具体的なパラメータ名を含むので検索"
+      },
+      "llm": [
+        {
+          "skill": "search",
+          "latencyMs": 1939,
+          "reason": "「max-model-len」は技術的なパラメータ名で、モデルや用途・設定仕様によって適切な値が異なるため、文書や最新仕様の確認が必要です。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1963,
+          "reason": "「max-model-len」というパラメータ名を含む設定値の質問であり、使用する製品・モデルや仕様によって適切な値が異なるため、文書を参照して確認する必要があります。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 2031,
+          "reason": "「max-model-len」は設定パラメータ名であり、モデルや使用環境ごとの仕様・推奨値を確認する必要があるため。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.99,
+          "pDirect": 0.01,
+          "latencyMs": 206,
+          "inputTokens": 1384,
+          "costUsd": 0.000058128,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.99,
+          "pDirect": 0.01,
+          "latencyMs": 171,
+          "inputTokens": 1384,
+          "costUsd": 0.000058128,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.99,
+          "pDirect": 0.01,
+          "latencyMs": 165,
+          "inputTokens": 1384,
+          "costUsd": 0.000058128,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "infinity ってなんで使ったんだっけ？",
+        "expected_skill": "search",
+        "category": "domain-casual",
+        "note": "口語的だが選定理由という文書固有の事実を問うている"
+      },
+      "llm": [
+        {
+          "skill": "search",
+          "latencyMs": 3823,
+          "reason": "「infinity」という具体的な用語が含まれており、どの文書・記録や文脈で使ったかを確認する必要があるため。"
+        },
+        {
+          "skill": "direct",
+          "latencyMs": 2999,
+          "reason": "「なんで使ったんだっけ？」は直前のやり取りや文脈を振り返る会話メタ発言に当たるため。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 2927,
+          "reason": "「infinity」が数値・技術用語として使われた理由を確認する必要があり、直前の文脈や情報源を参照すべき質問だからです。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.93,
+          "pDirect": 0.07,
+          "latencyMs": 164,
+          "inputTokens": 1376,
+          "costUsd": 0.000057792000000000005,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.94,
+          "pDirect": 0.06,
+          "latencyMs": 172,
+          "inputTokens": 1376,
+          "costUsd": 0.000057792000000000005,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.92,
+          "pDirect": 0.08,
+          "latencyMs": 173,
+          "inputTokens": 1376,
+          "costUsd": 0.000057792000000000005,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "LLaVA-Med の学習って何段階だったか覚えてる？",
+        "expected_skill": "search",
+        "category": "domain-casual",
+        "note": "会話的な問いかけの形をとった、文書固有の事実確認"
+      },
+      "llm": [
+        {
+          "skill": "search",
+          "latencyMs": 1646,
+          "reason": "LLaVA-Medという固有の研究モデルに関する具体的な学習段階の情報であり、論文などの情報源を確認する必要があるため。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1675,
+          "reason": "LLaVA-Medという固有の研究モデルに関する具体的な学習段階の数を尋ねており、論文などの情報源で確認すべき内容だから。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 2620,
+          "reason": "「LLaVA-Med」という固有名称と、学習段階に関する具体的な研究内容が含まれているため、文献を参照して確認する必要があります。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 1,
+          "pDirect": 0,
+          "latencyMs": 166,
+          "inputTokens": 1382,
+          "costUsd": 0.000058044,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 1,
+          "pDirect": 0,
+          "latencyMs": 167,
+          "inputTokens": 1382,
+          "costUsd": 0.000058044,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 1,
+          "pDirect": 0,
+          "latencyMs": 158,
+          "inputTokens": 1382,
+          "costUsd": 0.000058044,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "前に書いた記事だと GPU メモリの設定ってどうしてましたか？",
+        "expected_skill": "search",
+        "category": "domain-casual",
+        "note": "会話メタ発言に見えるが、参照先は過去の記事＝文書。設定値という具体的事実を問う"
+      },
+      "llm": [
+        {
+          "skill": "search",
+          "latencyMs": 2053,
+          "reason": "「前に書いた記事」という過去の文書・記録の参照を求めており、GPUメモリという技術用語も含まれているため、検索が必要です。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1627,
+          "reason": "「前に書いた記事」という過去の文書・記録を参照して、GPUメモリの設定という具体的な内容を確認する必要があるため。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 2955,
+          "reason": "「前に書いた記事」という過去の文書・記録の参照を求めており、GPUメモリという技術用語も含まれているため、検索が必要です。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.77,
+          "pDirect": 0.23,
+          "latencyMs": 186,
+          "inputTokens": 1387,
+          "costUsd": 0.000058254,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.71,
+          "pDirect": 0.29,
+          "latencyMs": 172,
+          "inputTokens": 1387,
+          "costUsd": 0.000058254,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.71,
+          "pDirect": 0.29,
+          "latencyMs": 160,
+          "inputTokens": 1387,
+          "costUsd": 0.000058254,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "Slurm でジョブを投入するコマンドを教えてください",
+        "expected_skill": "search",
+        "category": "domain-explicit",
+        "note": "固有名詞＋具体的な手順。明確に検索"
+      },
+      "llm": [
+        {
+          "skill": "search",
+          "latencyMs": 1716,
+          "reason": "Slurm とジョブ投入コマンドという技術用語・コマンド名を含むため、仕様や環境依存の情報を確認する検索スキルを使用します。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1590,
+          "reason": "Slurm は製品・コマンド名に該当し、ジョブ投入コマンドの具体的な仕様確認が必要なため。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 2366,
+          "reason": "Slurm という製品名・技術用語と、ジョブ投入コマンドという具体的な仕様に関する質問のため、検索スキルを使用します。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.95,
+          "pDirect": 0.05,
+          "latencyMs": 204,
+          "inputTokens": 1383,
+          "costUsd": 0.000058086,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.95,
+          "pDirect": 0.05,
+          "latencyMs": 177,
+          "inputTokens": 1383,
+          "costUsd": 0.000058086,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.93,
+          "pDirect": 0.07,
+          "latencyMs": 195,
+          "inputTokens": 1383,
+          "costUsd": 0.000058086,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "Qwen3-14B-bnb-4bit と Qwen3-8B-FP8 では GPU メモリの指定はどう違いますか？",
+        "expected_skill": "search",
+        "category": "domain-explicit",
+        "note": "バージョン間の比較。description が明示的に検索対象としている類型"
+      },
+      "llm": [
+        {
+          "skill": "search",
+          "latencyMs": 1857,
+          "reason": "Qwen3-14B-bnb-4bit、Qwen3-8B-FP8は具体的なモデル名・量子化形式で、GPUメモリ要件は実装や設定に依存する更新可能な技術情報のため、仕様や記録の確認が必要です。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 2355,
+          "reason": "Qwen3-14B-bnb-4bit、Qwen3-8B-FP8、GPUメモリという具体的なモデル名・量子化形式・技術用語を含み、設定値や必要メモリは実装・バージョン依存のため、仕様や記録の確認が必要です。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 2068,
+          "reason": "Qwen3-14B-bnb-4bit と Qwen3-8B-FP8 は具体的なモデル名・量子化形式・数値を含むため、GPUメモリ要件の正確な比較には仕様や実装依存の情報源の確認が必要です。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.99,
+          "pDirect": 0.01,
+          "latencyMs": 189,
+          "inputTokens": 1401,
+          "costUsd": 0.000058842,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.99,
+          "pDirect": 0.01,
+          "latencyMs": 162,
+          "inputTokens": 1401,
+          "costUsd": 0.000058842,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.99,
+          "pDirect": 0.01,
+          "latencyMs": 165,
+          "inputTokens": 1401,
+          "costUsd": 0.000058842,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "埋め込みモデルの選定基準について、根拠を示して説明してください",
+        "expected_skill": "search",
+        "category": "domain-explicit",
+        "note": "「根拠を示して」は description に列挙された明示的なトリガー語彙"
+      },
+      "llm": [
+        {
+          "skill": "search",
+          "latencyMs": 2090,
+          "reason": "「埋め込みモデル」という専門用語を含み、選定基準について根拠や情報源を示すよう求めているため、検索スキルを使用します。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1853,
+          "reason": "「埋め込みモデル」という専門用語を含み、選定基準について根拠の提示を求めているため、文書や評価情報の検索が必要です。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1833,
+          "reason": "埋め込みモデルの選定基準は専門的な内容であり、「根拠を示して」と出典が求められているため、文献や仕様を参照する検索スキルを使用します。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.99,
+          "pDirect": 0.01,
+          "latencyMs": 173,
+          "inputTokens": 1392,
+          "costUsd": 0.000058464,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.99,
+          "pDirect": 0.01,
+          "latencyMs": 174,
+          "inputTokens": 1392,
+          "costUsd": 0.000058464,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.99,
+          "pDirect": 0.01,
+          "latencyMs": 181,
+          "inputTokens": 1392,
+          "costUsd": 0.000058464,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "SIGNATE の RAG コンペの評価指標はどうやって算出されていましたか？",
+        "expected_skill": "search",
+        "category": "domain-explicit",
+        "note": "固有名詞＋算出方法という文書固有の事実"
+      },
+      "llm": [
+        {
+          "skill": "search",
+          "latencyMs": 2034,
+          "reason": "SIGNATEの特定コンペティションにおけるRAGの評価指標という、文書・公式記録の確認が必要な具体的情報を尋ねているため。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1804,
+          "reason": "SIGNATEの特定コンペティションにおける評価指標の算出方法を尋ねており、公式資料やコンペ概要の確認が必要なため。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1916,
+          "reason": "「SIGNATEのRAGコンペ」という特定のコンペティションに関する評価指標の算出方法であり、公式ルールや資料の確認が必要な具体的情報だからです。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 1,
+          "pDirect": 0,
+          "latencyMs": 169,
+          "inputTokens": 1390,
+          "costUsd": 0.00005838,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 1,
+          "pDirect": 0,
+          "latencyMs": 189,
+          "inputTokens": 1390,
+          "costUsd": 0.00005838,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 1,
+          "pDirect": 0,
+          "latencyMs": 148,
+          "inputTokens": 1390,
+          "costUsd": 0.00005838,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "トークンとは何ですか？",
+        "expected_skill": "search",
+        "category": "jargon-but-general",
+        "note": "一般知識で答えられる専門用語風の質問。非対称設計では「文書に存在しうる情報を含む」ため検索側に倒す想定。ここで direct が選ばれるのは設計意図からの逸脱だが、実害は小さい部類"
+      },
+      "llm": [
+        {
+          "skill": "direct",
+          "latencyMs": 1544,
+          "reason": "一般的な概念の説明を求める質問で、特定の文書・製品・数値などの参照を必要としないため。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1548,
+          "reason": "「トークン」はAI・認証・自然言語処理など複数の意味を持つ専門用語で、文脈に応じた正確な説明が必要なため。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1759,
+          "reason": "「トークン」はAI・認証・暗号資産など複数の意味を持つ専門用語で、文脈に応じた正確な説明のため検索が必要です。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.81,
+          "pDirect": 0.19,
+          "latencyMs": 170,
+          "inputTokens": 1370,
+          "costUsd": 0.00005754,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.83,
+          "pDirect": 0.17,
+          "latencyMs": 211,
+          "inputTokens": 1370,
+          "costUsd": 0.00005754,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.83,
+          "pDirect": 0.17,
+          "latencyMs": 162,
+          "inputTokens": 1370,
+          "costUsd": 0.00005754,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "c": {
+        "question": "GPU と CPU の違いを簡単に教えてください",
+        "expected_skill": "search",
+        "category": "jargon-but-general",
+        "note": "同上。一般知識で十分答えられるが、非対称設計では検索に倒すのが期待挙動"
+      },
+      "llm": [
+        {
+          "skill": "search",
+          "latencyMs": 1919,
+          "reason": "「GPU」「CPU」という技術用語が含まれているため、ルールに従い検索スキルを選択します。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1510,
+          "reason": "「GPU」「CPU」という技術用語を含む質問のため、ルールに従い検索スキルを使用します。"
+        },
+        {
+          "skill": "search",
+          "latencyMs": 1631,
+          "reason": "「GPU」「CPU」という技術用語が含まれているため、ルールに従い検索スキルを選択します。"
+        }
+      ],
+      "jev": [
+        {
+          "pSearch": 0.84,
+          "pDirect": 0.16,
+          "latencyMs": 199,
+          "inputTokens": 1377,
+          "costUsd": 0.000057834,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.83,
+          "pDirect": 0.17,
+          "latencyMs": 166,
+          "inputTokens": 1377,
+          "costUsd": 0.000057834,
+          "model": "jev-1.13.0"
+        },
+        {
+          "pSearch": 0.84,
+          "pDirect": 0.16,
+          "latencyMs": 175,
+          "inputTokens": 1377,
+          "costUsd": 0.000057834,
+          "model": "jev-1.13.0"
+        }
+      ]
+    }
+  ]
+}
